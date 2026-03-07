@@ -60,7 +60,7 @@ export function StatCard({ title, value, subtitle, icon: Icon, trend, variant = 
           <motion.p
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: delay + 0.15 }}
+            transition={{ duration: 0.6, delay: delay + 0.15, ease: "easeOut" }}
             className={`text-2xl lg:text-3xl font-display font-extrabold ${config.text} tracking-tight`}
           >
             {value}
