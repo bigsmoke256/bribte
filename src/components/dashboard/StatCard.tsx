@@ -1,4 +1,5 @@
-import { LucideIcon } from "lucide-react";
+import { LucideIcon, TrendingUp, TrendingDown } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface StatCardProps {
   title: string;
@@ -7,42 +8,75 @@ interface StatCardProps {
   icon: LucideIcon;
   trend?: { value: number; positive: boolean };
   variant?: "default" | "primary" | "success" | "warning" | "info";
+  delay?: number;
 }
 
-const variantStyles = {
-  default: "bg-card",
-  primary: "bg-primary text-primary-foreground",
-  success: "bg-success text-success-foreground",
-  warning: "bg-warning text-warning-foreground",
-  info: "bg-info text-info-foreground",
+const variantConfig = {
+  default: {
+    card: "bg-card",
+    icon: "bg-primary/10 text-primary",
+    text: "text-card-foreground",
+    sub: "text-muted-foreground",
+  },
+  primary: {
+    card: "primary-gradient text-primary-foreground",
+    icon: "bg-primary-foreground/15 text-primary-foreground",
+    text: "text-primary-foreground",
+    sub: "text-primary-foreground/70",
+  },
+  success: {
+    card: "bg-card border-success/20",
+    icon: "bg-success/10 text-success",
+    text: "text-card-foreground",
+    sub: "text-muted-foreground",
+  },
+  warning: {
+    card: "bg-card border-warning/20",
+    icon: "bg-warning/10 text-warning",
+    text: "text-card-foreground",
+    sub: "text-muted-foreground",
+  },
+  info: {
+    card: "bg-card border-info/20",
+    icon: "bg-info/10 text-info",
+    text: "text-card-foreground",
+    sub: "text-muted-foreground",
+  },
 };
 
-const iconVariantStyles = {
-  default: "bg-primary/10 text-primary",
-  primary: "bg-primary-foreground/20 text-primary-foreground",
-  success: "bg-success-foreground/20 text-success-foreground",
-  warning: "bg-warning-foreground/20 text-warning-foreground",
-  info: "bg-info-foreground/20 text-info-foreground",
-};
+export function StatCard({ title, value, subtitle, icon: Icon, trend, variant = "default", delay = 0 }: StatCardProps) {
+  const config = variantConfig[variant];
 
-export function StatCard({ title, value, subtitle, icon: Icon, trend, variant = "default" }: StatCardProps) {
   return (
-    <div className={`stat-card ${variantStyles[variant]} animate-fade-in`}>
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay, ease: [0.25, 0.46, 0.45, 0.94] }}
+      className={`stat-card ${config.card} group`}
+    >
       <div className="flex items-start justify-between">
-        <div className="space-y-1.5">
-          <p className={`text-xs font-medium uppercase tracking-wider ${variant === "default" ? "text-muted-foreground" : "opacity-80"}`}>{title}</p>
-          <p className="text-2xl font-display font-bold">{value}</p>
-          {subtitle && <p className={`text-xs ${variant === "default" ? "text-muted-foreground" : "opacity-70"}`}>{subtitle}</p>}
+        <div className="space-y-2 min-w-0 flex-1">
+          <p className={`text-[11px] font-semibold uppercase tracking-widest ${config.sub}`}>{title}</p>
+          <motion.p
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: delay + 0.15 }}
+            className={`text-2xl lg:text-3xl font-display font-extrabold ${config.text} tracking-tight`}
+          >
+            {value}
+          </motion.p>
+          {subtitle && <p className={`text-xs ${config.sub}`}>{subtitle}</p>}
           {trend && (
-            <p className={`text-xs font-medium ${trend.positive ? "text-success" : "text-destructive"}`}>
-              {trend.positive ? "↑" : "↓"} {Math.abs(trend.value)}% from last month
-            </p>
+            <div className={`inline-flex items-center gap-1 metric-badge ${trend.positive ? "metric-badge-success" : "metric-badge-destructive"}`}>
+              {trend.positive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+              <span>{Math.abs(trend.value)}%</span>
+            </div>
           )}
         </div>
-        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${iconVariantStyles[variant]}`}>
+        <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${config.icon} transition-transform duration-300 group-hover:scale-110`}>
           <Icon className="w-5 h-5" />
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

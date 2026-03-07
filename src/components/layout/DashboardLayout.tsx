@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, BookOpen, FileText, CreditCard, Calendar, Bell, Users,
   BarChart3, Settings, LogOut, Menu, X, GraduationCap, Upload, ClipboardList,
-  CheckCircle, MessageSquare, ChevronDown, Search
+  CheckCircle, MessageSquare, ChevronDown, Search, PanelLeftClose, PanelLeft
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
+import bribteCrest from "@/assets/bribte-crest.png";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface NavItem {
   label: string;
@@ -60,6 +62,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   const navItems = user.role === "student" ? studentNav : user.role === "lecturer" ? lecturerNav : adminNav;
   const roleLabel = user.role === "student" ? "Student Portal" : user.role === "lecturer" ? "Lecturer Portal" : "Admin Portal";
+  const roleColor = user.role === "student" ? "bg-info" : user.role === "lecturer" ? "bg-success" : "bg-accent";
   const initials = user.name.split(" ").map(n => n[0]).join("").slice(0, 2);
 
   const handleLogout = () => {
@@ -67,52 +70,61 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     navigate("/login");
   };
 
-  const NavContent = () => (
+  const NavContent = ({ collapsed = false }: { collapsed?: boolean }) => (
     <>
       {/* Logo */}
-      <div className="p-4 border-b border-sidebar-border">
+      <div className="p-4 mb-2">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg accent-gradient flex items-center justify-center flex-shrink-0">
-            <GraduationCap className="w-5 h-5 text-accent-foreground" />
-          </div>
-          {sidebarOpen && (
-            <div className="min-w-0">
-              <h1 className="font-display font-bold text-sm text-sidebar-foreground leading-tight">BRIBTE</h1>
-              <p className="text-[10px] text-sidebar-foreground/60 leading-tight">{roleLabel}</p>
-            </div>
+          <img src={bribteCrest} alt="BRIBTE" className="w-9 h-9 object-contain flex-shrink-0 drop-shadow-md" />
+          {!collapsed && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-w-0">
+              <h1 className="font-display font-bold text-sm text-sidebar-foreground leading-tight tracking-tight">BRIBTE</h1>
+              <p className="text-[10px] text-sidebar-foreground/50 font-medium tracking-wider uppercase">{roleLabel}</p>
+            </motion.div>
           )}
         </div>
       </div>
 
+      <div className="px-3 mb-3">
+        <div className="h-px bg-sidebar-border/50" />
+      </div>
+
       {/* Nav items */}
-      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-        {navItems.map((item) => {
+      <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
+        {navItems.map((item, i) => {
           const active = location.pathname === item.path;
           return (
-            <button
+            <motion.button
               key={item.path}
+              initial={{ opacity: 0, x: -12 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.04 }}
               onClick={() => { navigate(item.path); setMobileOpen(false); }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] transition-all duration-200 ${
                 active
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold shadow-sm"
+                  : "text-sidebar-foreground/60 hover:bg-sidebar-muted hover:text-sidebar-foreground"
               }`}
+              title={collapsed ? item.label : undefined}
             >
-              <item.icon className="w-4.5 h-4.5 flex-shrink-0" />
-              {sidebarOpen && <span>{item.label}</span>}
-            </button>
+              <item.icon className={`w-[18px] h-[18px] flex-shrink-0 ${active ? "text-sidebar-primary" : ""}`} />
+              {!collapsed && <span>{item.label}</span>}
+              {active && !collapsed && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-sidebar-primary" />}
+            </motion.button>
           );
         })}
       </nav>
 
       {/* User section */}
-      <div className="p-3 border-t border-sidebar-border">
+      <div className="p-3 mt-2">
+        <div className="h-px bg-sidebar-border/50 mb-3" />
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 transition-all"
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] text-sidebar-foreground/50 hover:bg-sidebar-muted hover:text-sidebar-foreground transition-all duration-200"
+          title={collapsed ? "Sign Out" : undefined}
         >
-          <LogOut className="w-4.5 h-4.5 flex-shrink-0" />
-          {sidebarOpen && <span>Sign Out</span>}
+          <LogOut className="w-[18px] h-[18px] flex-shrink-0" />
+          {!collapsed && <span>Sign Out</span>}
         </button>
       </div>
     </>
@@ -121,58 +133,89 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex bg-background">
       {/* Desktop sidebar */}
-      <aside className={`hidden lg:flex flex-col sidebar-gradient transition-all duration-300 ${sidebarOpen ? "w-60" : "w-16"}`}>
-        <NavContent />
-      </aside>
+      <motion.aside
+        initial={false}
+        animate={{ width: sidebarOpen ? 250 : 72 }}
+        transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+        className="hidden lg:flex flex-col sidebar-gradient relative z-30 overflow-hidden flex-shrink-0"
+      >
+        <NavContent collapsed={!sidebarOpen} />
+      </motion.aside>
 
       {/* Mobile sidebar overlay */}
-      {mobileOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="absolute inset-0 bg-foreground/50" onClick={() => setMobileOpen(false)} />
-          <aside className="absolute left-0 top-0 bottom-0 w-64 sidebar-gradient flex flex-col">
-            <NavContent />
-          </aside>
-        </div>
-      )}
+      <AnimatePresence>
+        {mobileOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-foreground/40 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
+            <motion.aside
+              initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="absolute left-0 top-0 bottom-0 w-[270px] sidebar-gradient flex flex-col shadow-2xl"
+            >
+              <NavContent />
+            </motion.aside>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top header */}
-        <header className="h-16 bg-card border-b flex items-center justify-between px-4 lg:px-6 sticky top-0 z-40">
-          <div className="flex items-center gap-3">
-            <button onClick={() => { if (window.innerWidth >= 1024) setSidebarOpen(!sidebarOpen); else setMobileOpen(true); }} className="p-2 rounded-lg hover:bg-muted transition-colors">
-              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        <header className="h-16 bg-card/80 backdrop-blur-lg border-b flex items-center justify-between px-4 lg:px-6 sticky top-0 z-40">
+          <div className="flex items-center gap-2">
+            <button onClick={() => { if (window.innerWidth >= 1024) setSidebarOpen(!sidebarOpen); else setMobileOpen(true); }}
+              className="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-muted transition-colors">
+              <AnimatePresence mode="wait">
+                {window.innerWidth < 1024 ? (
+                  <Menu className="w-5 h-5 text-muted-foreground" />
+                ) : sidebarOpen ? (
+                  <motion.div key="close" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }}>
+                    <PanelLeftClose className="w-5 h-5 text-muted-foreground" />
+                  </motion.div>
+                ) : (
+                  <motion.div key="open" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }}>
+                    <PanelLeft className="w-5 h-5 text-muted-foreground" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </button>
-            <div className="hidden sm:flex items-center gap-2 bg-muted rounded-lg px-3 py-2 w-64">
-              <Search className="w-4 h-4 text-muted-foreground" />
-              <Input placeholder="Search..." className="border-0 bg-transparent p-0 h-auto text-sm focus-visible:ring-0 placeholder:text-muted-foreground" />
+            
+            <div className="hidden md:flex items-center gap-2 bg-muted/60 rounded-xl px-3.5 py-2 w-72 border border-transparent focus-within:border-primary/20 focus-within:bg-card transition-all duration-200">
+              <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+              <Input placeholder="Search students, courses..." className="border-0 bg-transparent p-0 h-auto text-sm focus-visible:ring-0 placeholder:text-muted-foreground/50" />
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <button className="relative p-2 rounded-lg hover:bg-muted transition-colors">
-              <Bell className="w-5 h-5 text-muted-foreground" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full" />
+          <div className="flex items-center gap-2">
+            <button className="relative w-9 h-9 rounded-xl flex items-center justify-center hover:bg-muted transition-colors">
+              <Bell className="w-[18px] h-[18px] text-muted-foreground" />
+              <span className="absolute top-2 right-2 w-2 h-2 bg-destructive rounded-full ring-2 ring-card" />
             </button>
+
+            <div className="w-px h-6 bg-border mx-1 hidden sm:block" />
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-muted transition-colors">
-                  <Avatar className="w-8 h-8">
-                    <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">{initials}</AvatarFallback>
+                <button className="flex items-center gap-2.5 py-1.5 px-2 rounded-xl hover:bg-muted transition-colors">
+                  <Avatar className="w-8 h-8 ring-2 ring-primary/20">
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xs font-bold">{initials}</AvatarFallback>
                   </Avatar>
                   <div className="hidden sm:block text-left">
-                    <p className="text-sm font-medium leading-tight">{user.name}</p>
-                    <p className="text-[11px] text-muted-foreground leading-tight capitalize">{user.role}</p>
+                    <p className="text-sm font-semibold leading-tight">{user.name}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className={`w-1.5 h-1.5 rounded-full ${roleColor}`} />
+                      <p className="text-[11px] text-muted-foreground leading-tight capitalize">{user.role}</p>
+                    </div>
                   </div>
-                  <ChevronDown className="w-4 h-4 text-muted-foreground hidden sm:block" />
+                  <ChevronDown className="w-3.5 h-3.5 text-muted-foreground hidden sm:block" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem>Profile</DropdownMenuItem>
-                <DropdownMenuItem>Settings</DropdownMenuItem>
+              <DropdownMenuContent align="end" className="w-52 rounded-xl p-1.5">
+                <DropdownMenuItem className="rounded-lg text-sm py-2">Profile Settings</DropdownMenuItem>
+                <DropdownMenuItem className="rounded-lg text-sm py-2">Help & Support</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout}>Sign Out</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout} className="rounded-lg text-sm py-2 text-destructive focus:text-destructive">Sign Out</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -180,7 +223,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
         {/* Page content */}
         <main className="flex-1 p-4 lg:p-6 overflow-auto">
-          {children}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+            {children}
+          </motion.div>
         </main>
       </div>
     </div>
