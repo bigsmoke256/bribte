@@ -372,7 +372,6 @@ Return ONLY the JSON, no markdown, no explanation.`,
       const notes = `Student name mismatch. Receipt: "${receiptStudentName}", Database: "${studentDbName}". Names do not match.`;
       return await rejectWithAlert("name_mismatch", notes);
     }
-    }
 
     if (similarity < 0.7) {
       await supabase.from("receipt_uploads").update({
