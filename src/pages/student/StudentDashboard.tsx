@@ -11,6 +11,7 @@ import StudentAnnouncementsPage from "./StudentAnnouncementsPage";
 import StudentExamCardPage from "./StudentExamCardPage";
 import StudentClearancePage from "./StudentClearancePage";
 import ProfileSettingsPage from "../shared/ProfileSettingsPage";
+import HelpSupportPage from "../shared/HelpSupportPage";
 
 export default function StudentDashboard() {
   return (
@@ -27,6 +28,7 @@ export default function StudentDashboard() {
         <Route path="exam-card" element={<StudentExamCardPage />} />
         <Route path="clearance" element={<StudentClearancePage />} />
         <Route path="profile" element={<ProfileSettingsPage />} />
+        <Route path="help" element={<HelpSupportPage />} />
       </Routes>
     </DashboardLayout>
   );

@@ -184,7 +184,7 @@ export default function LoginPage() {
           <motion.div variants={itemVariants} className="mt-8 pt-6 border-t border-border/60">
             <p className="text-center text-[11px] text-muted-foreground">
               Lecturers & Admins: Your accounts are created by the administration.
-              <br />Need help? Contact <a href="#" className="text-primary font-medium hover:underline">IT Support</a>.
+              <br />Need help? Contact <a href="mailto:musinguzij619@gmail.com" className="text-primary font-medium hover:underline">IT Support</a>.
             </p>
           </motion.div>
         </motion.div>

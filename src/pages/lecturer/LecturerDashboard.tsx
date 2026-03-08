@@ -9,6 +9,7 @@ import LecturerGradesPage from "./LecturerGradesPage";
 import LecturerTimetablePage from "./LecturerTimetablePage";
 import LecturerAnnouncementsPage from "./LecturerAnnouncementsPage";
 import ProfileSettingsPage from "../shared/ProfileSettingsPage";
+import HelpSupportPage from "../shared/HelpSupportPage";
 
 export default function LecturerDashboard() {
   const { user } = useAuth();
@@ -25,6 +26,7 @@ export default function LecturerDashboard() {
         <Route path="timetable" element={<LecturerTimetablePage />} />
         <Route path="announcements" element={<LecturerAnnouncementsPage />} />
         <Route path="profile" element={<ProfileSettingsPage />} />
+        <Route path="help" element={<HelpSupportPage />} />
       </Routes>
     </DashboardLayout>
   );

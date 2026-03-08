@@ -23,6 +23,7 @@ import AdminAlumniPage from "./AdminAlumniPage";
 import AdminAuditLogPage from "./AdminAuditLogPage";
 import AdminPoliciesPage from "./AdminPoliciesPage";
 import ProfileSettingsPage from "../shared/ProfileSettingsPage";
+import HelpSupportPage from "../shared/HelpSupportPage";
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -53,6 +54,7 @@ export default function AdminDashboard() {
         <Route path="policies" element={<AdminPoliciesPage />} />
         <Route path="settings" element={<AdminSettingsPage />} />
         <Route path="profile" element={<ProfileSettingsPage />} />
+        <Route path="help" element={<HelpSupportPage />} />
       </Routes>
     </DashboardLayout>
   );

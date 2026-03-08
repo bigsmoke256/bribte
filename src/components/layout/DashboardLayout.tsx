@@ -276,7 +276,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-52 rounded-xl p-1.5">
                 <DropdownMenuItem onClick={() => navigate(`/${user.role}/profile`)} className="rounded-lg text-sm py-2">Profile Settings</DropdownMenuItem>
-                <DropdownMenuItem className="rounded-lg text-sm py-2">Help & Support</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate(`/${user.role}/help`)} className="rounded-lg text-sm py-2">Help & Support</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="rounded-lg text-sm py-2 text-destructive focus:text-destructive">Sign Out</DropdownMenuItem>
               </DropdownMenuContent>
