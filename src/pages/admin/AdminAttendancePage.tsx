@@ -110,6 +110,7 @@ export default function AdminAttendancePage() {
   const attendanceRate = stats.total > 0 ? Math.round(((stats.present + stats.late) / stats.total) * 100) : 0;
 
   return (
+    <DashboardLayout>
     <div className="space-y-6 max-w-[1400px] mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
