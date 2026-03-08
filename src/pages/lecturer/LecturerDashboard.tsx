@@ -6,6 +6,7 @@ import LecturerCoursesPage from "./LecturerCoursesPage";
 import LecturerAssignmentsPage from "./LecturerAssignmentsPage";
 import LecturerSubmissionsPage from "./LecturerSubmissionsPage";
 import LecturerGradesPage from "./LecturerGradesPage";
+import LecturerTimetablePage from "./LecturerTimetablePage";
 import LecturerAnnouncementsPage from "./LecturerAnnouncementsPage";
 
 export default function LecturerDashboard() {
@@ -20,6 +21,7 @@ export default function LecturerDashboard() {
         <Route path="assignments" element={<LecturerAssignmentsPage />} />
         <Route path="submissions" element={<LecturerSubmissionsPage />} />
         <Route path="grades" element={<LecturerGradesPage />} />
+        <Route path="timetable" element={<LecturerTimetablePage />} />
         <Route path="announcements" element={<LecturerAnnouncementsPage />} />
       </Routes>
     </DashboardLayout>

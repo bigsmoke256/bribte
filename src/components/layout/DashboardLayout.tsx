@@ -48,6 +48,7 @@ const adminNav: NavItem[] = [
   { label: "Courses", icon: BookOpen, path: "/admin/courses" },
   { label: "Fee Management", icon: CreditCard, path: "/admin/fees" },
   { label: "Enrollment", icon: GraduationCap, path: "/admin/enrollment" },
+  { label: "Timetable", icon: Calendar, path: "/admin/timetable" },
   { label: "Announcements", icon: Bell, path: "/admin/announcements" },
   { label: "Reports", icon: BarChart3, path: "/admin/reports" },
   { label: "Settings", icon: Settings, path: "/admin/settings" },
