@@ -49,11 +49,11 @@ export default function ProfileSettingsPage() {
     setUploading(true);
     try {
       const ext = file.name.split(".").pop();
-      const path = `avatars/${user.id}.${ext}`;
-      const { error: uploadError } = await supabase.storage.from("course-materials").upload(path, file, { upsert: true });
+      const path = `${user.id}/avatar.${ext}`;
+      const { error: uploadError } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage.from("course-materials").getPublicUrl(path);
+      const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
       setAvatarUrl(publicUrl);
       toast.success("Avatar uploaded");
     } catch (err: any) {
