@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, BookOpen, FileText, CreditCard, Calendar, Bell, Users,
   BarChart3, Settings, LogOut, Menu, GraduationCap, Upload, ClipboardList,
-  CheckCircle, MessageSquare, ChevronDown, Search, PanelLeftClose, PanelLeft, UserCog, Video, ClipboardCheck
+  CheckCircle, MessageSquare, ChevronDown, Search, PanelLeftClose, PanelLeft, UserCog, Video, ClipboardCheck, Archive
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,6 +56,7 @@ const adminNav: NavItem[] = [
   { label: "Attendance", icon: ClipboardCheck, path: "/admin/attendance" },
   { label: "Announcements", icon: Bell, path: "/admin/announcements" },
   { label: "Reports", icon: BarChart3, path: "/admin/reports" },
+  { label: "Student Records", icon: Archive, path: "/admin/records" },
   { label: "Settings", icon: Settings, path: "/admin/settings" },
 ];
 
