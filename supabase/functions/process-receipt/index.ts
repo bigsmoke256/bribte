@@ -8,6 +8,46 @@ const corsHeaders = {
 
 const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
+const VALID_PROVIDERS = [
+  "schoolpay",
+  "mtn mobilemoney",
+  "mtn mobile money",
+  "airtel money",
+  "bank transfer",
+  "stanbic",
+  "centenary",
+  "dfcu",
+  "equity",
+];
+
+const REQUIRED_FIELDS = [
+  "payment_code",
+  "student_name",
+  "amount",
+  "payment_date",
+  "channel",
+  "institution_name",
+];
+
+function jsonResponse(data: any, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+function normalizeString(s: string | null | undefined): string {
+  return (s || "").toLowerCase().replace(/[^a-z0-9\s]/g, "").trim();
+}
+
+function nameSimilarity(a: string, b: string): number {
+  const na = normalizeString(a).split(/\s+/).filter(Boolean);
+  const nb = normalizeString(b).split(/\s+/).filter(Boolean);
+  if (na.length === 0 || nb.length === 0) return 0;
+  const matches = na.filter(w => nb.includes(w)).length;
+  return matches / Math.max(na.length, nb.length);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -24,17 +64,18 @@ Deno.serve(async (req) => {
     const { receipt_id } = await req.json();
     if (!receipt_id) throw new Error("receipt_id is required");
 
-    // 1. Fetch receipt record
+    // 1. Fetch receipt record with student info
     const { data: receipt, error: rErr } = await supabase
       .from("receipt_uploads")
-      .select("*, student:students(id, user_id, course_id, registration_number)")
+      .select("*, student:students(id, user_id, course_id, registration_number, fee_balance, study_mode)")
       .eq("id", receipt_id)
       .single();
     if (rErr || !receipt) throw new Error("Receipt not found");
 
     const student = Array.isArray(receipt.student) ? receipt.student[0] : receipt.student;
+    const validationFlags: Record<string, any> = {};
 
-    // 2. Check duplicate file hash
+    // 2. File hash duplicate check
     if (receipt.file_hash) {
       const { data: dup } = await supabase
         .from("receipt_uploads")
@@ -44,21 +85,23 @@ Deno.serve(async (req) => {
         .neq("status", "rejected")
         .limit(1);
       if (dup && dup.length > 0) {
-        await supabase.from("receipt_uploads").update({ status: "rejected", review_notes: "Duplicate file detected" }).eq("id", receipt_id);
+        await supabase.from("receipt_uploads").update({
+          status: "rejected",
+          review_notes: "Duplicate file detected (same file already uploaded)",
+        }).eq("id", receipt_id);
         return jsonResponse({ status: "rejected", reason: "duplicate_file" });
       }
     }
 
-    // 3. Fetch the file and convert to base64 for vision
-    const fileUrl = receipt.file_url;
-    const fileResp = await fetch(fileUrl);
+    // 3. Fetch file and convert to base64
+    const fileResp = await fetch(receipt.file_url);
     if (!fileResp.ok) throw new Error("Failed to fetch receipt file");
     const fileBuffer = await fileResp.arrayBuffer();
     const base64 = btoa(String.fromCharCode(...new Uint8Array(fileBuffer)));
     const contentType = fileResp.headers.get("content-type") || "image/jpeg";
     const mediaType = contentType.includes("pdf") ? "application/pdf" : contentType;
 
-    // 4. Send to AI for OCR extraction
+    // 4. AI OCR extraction with SchoolPay-specific prompt
     const aiResponse = await fetch(AI_GATEWAY_URL, {
       method: "POST",
       headers: {
@@ -73,18 +116,32 @@ Deno.serve(async (req) => {
             content: [
               {
                 type: "text",
-                text: `You are a payment receipt OCR extraction system for a university fee payment system. Analyze this receipt image and extract payment details. Return ONLY a valid JSON object:
+                text: `You are a receipt OCR system for BUGANDA ROYAL INSTITUTE OF BUSINESS & TECHNICAL INSTITUTE (also known as BRIBTE).
+
+Analyze this SchoolPay transaction receipt and extract ALL fields. Return ONLY a valid JSON object with these exact keys:
+
 {
-  "amount": <number or null - the payment amount WITHOUT currency symbols>,
-  "transaction_id": "<string or null - any reference/receipt/transaction number>",
-  "payment_date": "<YYYY-MM-DD or null>",
-  "sender_name": "<string or null - the payer's name>",
-  "payment_provider": "<string or null - e.g. MTN Mobile Money, Airtel Money, Bank name>",
-  "confidence_score": <0.0-1.0 indicating confidence in the amount extraction>
+  "payment_code": "<string or null - the Payment Code / transaction code>",
+  "student_name": "<string or null - Student Name>",
+  "student_class": "<string or null - Student Class / course name>",
+  "amount": <number or null - the Amount WITHOUT currency symbols or commas>,
+  "amount_in_words": "<string or null - Amount in words>",
+  "payment_date": "<YYYY-MM-DD HH:mm or null - Date field>",
+  "channel": "<string or null - Channel e.g. MTN MobileMoney>",
+  "description": "<string or null - Description field>",
+  "trans_type": "<string or null - Trans Type>",
+  "channel_depositor": "<string or null - Channel Depositor Name or Number>",
+  "channel_memo": "<string or null - Channel Memo>",
+  "institution_name": "<string or null - the institution name shown on receipt>",
+  "payment_provider": "<string or null - e.g. SchoolPay>",
+  "confidence_score": <0.0-1.0 - overall extraction confidence>
 }
 
-CRITICAL: The most important field is "amount". Try your best to extract it. If you can read any number that looks like a payment amount, extract it. Be generous with confidence if you can clearly see an amount.
-Return ONLY the JSON, no markdown, no explanation.`,
+IMPORTANT:
+- Extract the Payment Code (transaction code) carefully - this is critical for verification.
+- The amount should be a plain number without commas or currency symbols.
+- If institution_name contains "BUGANDA ROYAL" or "BRIBTE", include it as-is.
+- Return ONLY the JSON, no markdown, no explanation.`,
               },
               {
                 type: "image_url",
@@ -93,7 +150,7 @@ Return ONLY the JSON, no markdown, no explanation.`,
             ],
           },
         ],
-        max_tokens: 1000,
+        max_tokens: 1500,
         temperature: 0.1,
       }),
     });
@@ -106,7 +163,6 @@ Return ONLY the JSON, no markdown, no explanation.`,
     const aiData = await aiResponse.json();
     const rawContent = aiData.choices?.[0]?.message?.content || "";
 
-    // Parse the JSON from the response
     let extracted: any;
     try {
       const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
@@ -116,91 +172,248 @@ Return ONLY the JSON, no markdown, no explanation.`,
     }
 
     if (!extracted) {
-      await supabase.from("receipt_uploads").update({ status: "review_required", review_notes: "AI could not parse receipt content" }).eq("id", receipt_id);
+      await supabase.from("receipt_uploads").update({
+        status: "review_required",
+        review_notes: "AI could not parse receipt content",
+      }).eq("id", receipt_id);
       return jsonResponse({ status: "review_required", reason: "extraction_failed" });
     }
 
-    // 5. Store extraction results
+    // 5. Store extraction results with all SchoolPay fields
     await supabase.from("receipt_extractions").insert({
       receipt_id,
       amount: extracted.amount,
-      transaction_id: extracted.transaction_id,
-      payment_date: extracted.payment_date,
-      sender_name: extracted.sender_name,
-      payment_provider: extracted.payment_provider,
+      transaction_id: extracted.payment_code,
+      payment_date: extracted.payment_date ? extracted.payment_date.substring(0, 10) : null,
+      sender_name: extracted.student_name,
+      payment_provider: extracted.payment_provider || "SchoolPay",
       raw_text: rawContent,
       confidence_score: extracted.confidence_score ?? 0.5,
+      student_class: extracted.student_class,
+      channel_depositor: extracted.channel_depositor,
+      channel_memo: extracted.channel_memo,
+      institution_name: extracted.institution_name,
+      trans_type: extracted.trans_type,
+      amount_in_words: extracted.amount_in_words,
+      description: extracted.description,
     });
 
-    // 6. Check duplicate transaction ID
-    if (extracted.transaction_id) {
+    // ============================================
+    // VALIDATION PIPELINE
+    // ============================================
+
+    // CHECK 1: Structure validation - mandatory fields
+    const missingFields: string[] = [];
+    if (!extracted.payment_code) missingFields.push("payment_code");
+    if (!extracted.student_name) missingFields.push("student_name");
+    if (!extracted.amount || extracted.amount <= 0) missingFields.push("amount");
+    if (!extracted.payment_date) missingFields.push("payment_date");
+    if (!extracted.channel) missingFields.push("channel");
+    if (!extracted.institution_name) missingFields.push("institution_name");
+
+    if (missingFields.length > 0) {
+      validationFlags.missing_fields = missingFields;
+      await supabase.from("receipt_uploads").update({
+        status: "rejected",
+        review_notes: `Receipt rejected: missing mandatory fields: ${missingFields.join(", ")}. This may indicate a fake or incomplete receipt.`,
+      }).eq("id", receipt_id);
+      // Update validation flags
+      await supabase.from("receipt_extractions").update({ validation_flags: validationFlags })
+        .eq("receipt_id", receipt_id);
+      return jsonResponse({ status: "rejected", reason: "missing_fields", missing: missingFields });
+    }
+
+    // CHECK 2: OCR confidence
+    const confidence = extracted.confidence_score ?? 0;
+    if (confidence < 0.3) {
+      validationFlags.low_confidence = confidence;
+      await supabase.from("receipt_uploads").update({
+        status: "review_required",
+        review_notes: `Very low OCR confidence (${(confidence * 100).toFixed(0)}%). Receipt may be blurry or manipulated.`,
+      }).eq("id", receipt_id);
+      await supabase.from("receipt_extractions").update({ validation_flags: validationFlags })
+        .eq("receipt_id", receipt_id);
+      return jsonResponse({ status: "review_required", reason: "low_confidence" });
+    }
+
+    // CHECK 3: Transaction code duplicate
+    if (extracted.payment_code) {
       const { data: dupTx } = await supabase
         .from("payment_transactions")
         .select("id")
-        .eq("transaction_id", extracted.transaction_id)
+        .eq("transaction_id", extracted.payment_code)
         .limit(1);
       if (dupTx && dupTx.length > 0) {
-        await supabase.from("receipt_uploads").update({ status: "rejected", review_notes: "Duplicate transaction ID: " + extracted.transaction_id }).eq("id", receipt_id);
+        validationFlags.duplicate_transaction = extracted.payment_code;
+        await supabase.from("receipt_uploads").update({
+          status: "rejected",
+          review_notes: `Duplicate transaction code: ${extracted.payment_code}. This receipt has already been processed.`,
+        }).eq("id", receipt_id);
+        await supabase.from("receipt_extractions").update({ validation_flags: validationFlags })
+          .eq("receipt_id", receipt_id);
         return jsonResponse({ status: "rejected", reason: "duplicate_transaction" });
       }
     }
 
-    // 7. Decide: auto-approve or send to review
-    // Only send to review if we truly cannot extract an amount
-    if (!extracted.amount || extracted.amount <= 0) {
+    // CHECK 4: Payment provider validation
+    const channelNorm = normalizeString(extracted.channel);
+    const providerNorm = normalizeString(extracted.payment_provider);
+    const isKnownProvider = VALID_PROVIDERS.some(p =>
+      channelNorm.includes(p) || providerNorm.includes(p)
+    );
+    if (!isKnownProvider) {
+      validationFlags.unknown_provider = extracted.channel;
       await supabase.from("receipt_uploads").update({
         status: "review_required",
-        review_notes: "Could not extract payment amount from receipt",
+        review_notes: `Unknown payment provider/channel: "${extracted.channel}". Only SchoolPay, MTN, Airtel, and Bank Transfer are accepted.`,
       }).eq("id", receipt_id);
-      return jsonResponse({ status: "review_required", reason: "no_amount" });
+      await supabase.from("receipt_extractions").update({ validation_flags: validationFlags })
+        .eq("receipt_id", receipt_id);
+      return jsonResponse({ status: "review_required", reason: "unknown_provider" });
     }
 
-    // Very low confidence AND no transaction ID = send to review
-    if ((extracted.confidence_score ?? 0) < 0.3 && !extracted.transaction_id) {
+    // CHECK 5: Student name matching
+    // Get student's profile name
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("user_id", student.user_id)
+      .single();
+
+    const studentDbName = profile?.full_name || "";
+    const receiptStudentName = extracted.student_name || "";
+    const similarity = nameSimilarity(studentDbName, receiptStudentName);
+    validationFlags.name_similarity = similarity;
+    validationFlags.db_name = studentDbName;
+    validationFlags.receipt_name = receiptStudentName;
+
+    if (similarity < 0.3) {
+      // No match at all - reject
+      await supabase.from("receipt_uploads").update({
+        status: "rejected",
+        review_notes: `Student name mismatch. Receipt: "${receiptStudentName}", Database: "${studentDbName}". Names do not match.`,
+      }).eq("id", receipt_id);
+      await supabase.from("receipt_extractions").update({ validation_flags: validationFlags })
+        .eq("receipt_id", receipt_id);
+      return jsonResponse({ status: "rejected", reason: "name_mismatch" });
+    }
+
+    if (similarity < 0.7) {
+      // Partial match - send to review
       await supabase.from("receipt_uploads").update({
         status: "review_required",
-        review_notes: "Very low confidence and no transaction reference",
+        review_notes: `Student name partially matches. Receipt: "${receiptStudentName}", Database: "${studentDbName}" (similarity: ${(similarity * 100).toFixed(0)}%).`,
       }).eq("id", receipt_id);
-      return jsonResponse({ status: "review_required", reason: "low_confidence" });
+      await supabase.from("receipt_extractions").update({ validation_flags: validationFlags })
+        .eq("receipt_id", receipt_id);
+      return jsonResponse({ status: "review_required", reason: "name_partial_match" });
     }
 
-    // 8. AUTO-APPROVE: Apply payment immediately
+    // CHECK 6: Course / enrollment validation
+    if (extracted.student_class && student.course_id) {
+      const { data: course } = await supabase
+        .from("courses")
+        .select("course_name, course_code")
+        .eq("id", student.course_id)
+        .single();
+
+      if (course) {
+        const receiptCourse = normalizeString(extracted.student_class);
+        const dbCourseName = normalizeString(course.course_name);
+        const dbCourseCode = normalizeString(course.course_code);
+
+        const courseMatch =
+          receiptCourse.includes(dbCourseName) ||
+          dbCourseName.includes(receiptCourse) ||
+          receiptCourse.includes(dbCourseCode) ||
+          nameSimilarity(receiptCourse, dbCourseName) > 0.5;
+
+        validationFlags.course_match = courseMatch;
+        validationFlags.receipt_course = extracted.student_class;
+        validationFlags.db_course = course.course_name;
+
+        if (!courseMatch) {
+          await supabase.from("receipt_uploads").update({
+            status: "review_required",
+            review_notes: `Course mismatch. Receipt: "${extracted.student_class}", Enrolled in: "${course.course_name}".`,
+          }).eq("id", receipt_id);
+          await supabase.from("receipt_extractions").update({ validation_flags: validationFlags })
+            .eq("receipt_id", receipt_id);
+          return jsonResponse({ status: "review_required", reason: "course_mismatch" });
+        }
+      }
+    }
+
+    // CHECK 7: Amount validation
+    const amount = Number(extracted.amount);
+    const outstandingBalance = Number(student.fee_balance || 0);
+    validationFlags.extracted_amount = amount;
+    validationFlags.outstanding_balance = outstandingBalance;
+
+    // Unrealistic amount check (> 10x outstanding or > 10,000,000 UGX)
+    if (amount > 10000000) {
+      await supabase.from("receipt_uploads").update({
+        status: "review_required",
+        review_notes: `Unusually high payment amount: UGX ${amount.toLocaleString()}. Requires manual verification.`,
+      }).eq("id", receipt_id);
+      await supabase.from("receipt_extractions").update({ validation_flags: validationFlags })
+        .eq("receipt_id", receipt_id);
+      return jsonResponse({ status: "review_required", reason: "amount_suspicious" });
+    }
+
+    if (outstandingBalance > 0 && amount > outstandingBalance * 3) {
+      await supabase.from("receipt_uploads").update({
+        status: "review_required",
+        review_notes: `Payment amount (UGX ${amount.toLocaleString()}) is more than 3x the outstanding balance (UGX ${outstandingBalance.toLocaleString()}). Requires verification.`,
+      }).eq("id", receipt_id);
+      await supabase.from("receipt_extractions").update({ validation_flags: validationFlags })
+        .eq("receipt_id", receipt_id);
+      return jsonResponse({ status: "review_required", reason: "amount_suspicious" });
+    }
+
+    // ============================================
+    // ALL CHECKS PASSED - AUTO-APPROVE
+    // ============================================
+    validationFlags.auto_approved = true;
+
+    // Create payment record
     const { error: payErr } = await supabase.from("payments").insert({
       student_id: student.id,
-      amount: extracted.amount,
+      amount,
       payment_status: "approved",
       receipt_url: receipt.file_url,
-      notes: `AI-verified. Amount: ${extracted.amount}. Tx: ${extracted.transaction_id || "N/A"}. Provider: ${extracted.payment_provider || "N/A"}. Confidence: ${(extracted.confidence_score * 100).toFixed(0)}%`,
+      notes: `Auto-verified via SchoolPay. Code: ${extracted.payment_code}. Channel: ${extracted.channel}. Provider: ${extracted.payment_provider || "SchoolPay"}. Confidence: ${(confidence * 100).toFixed(0)}%. Name match: ${(similarity * 100).toFixed(0)}%`,
     });
     if (payErr) throw new Error("Failed to create payment: " + payErr.message);
 
-    // Track transaction ID for duplicate prevention
-    if (extracted.transaction_id) {
+    // Track transaction for duplicate prevention
+    if (extracted.payment_code) {
       await supabase.from("payment_transactions").insert({
         student_id: student.id,
         course_id: receipt.course_id,
-        transaction_id: extracted.transaction_id,
-        amount: extracted.amount,
+        transaction_id: extracted.payment_code,
+        amount,
         receipt_id,
       });
     }
 
-    // Recalculate fee balance (supports overpayment/credit)
+    // Recalculate balance
     await supabase.rpc("recalculate_fee_balance", { p_student_id: student.id });
 
-    // Get updated balance for response
     const { data: updatedStudent } = await supabase
       .from("students")
       .select("fee_balance")
       .eq("id", student.id)
       .single();
 
-    // Update receipt status
+    // Update receipt and extraction
     await supabase.from("receipt_uploads").update({ status: "verified" }).eq("id", receipt_id);
+    await supabase.from("receipt_extractions").update({ validation_flags: validationFlags })
+      .eq("receipt_id", receipt_id);
 
     return jsonResponse({
       status: "verified",
-      extracted,
+      extracted: { amount, transaction_id: extracted.payment_code },
       new_balance: updatedStudent?.fee_balance ?? null,
     });
   } catch (error: unknown) {
@@ -212,10 +425,3 @@ Return ONLY the JSON, no markdown, no explanation.`,
     });
   }
 });
-
-function jsonResponse(data: any, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type", "Content-Type": "application/json" },
-  });
-}
