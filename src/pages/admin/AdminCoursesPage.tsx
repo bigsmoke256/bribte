@@ -66,6 +66,7 @@ export default function AdminCoursesPage() {
   const [search, setSearch] = useState("");
   const [levelFilter, setLevelFilter] = useState("all");
   const [pubFilter, setPubFilter] = useState("all");
+  const [modeFilter, setModeFilter] = useState("all");
 
   // Form dialog
   const [dialog, setDialog] = useState(false);
@@ -257,7 +258,11 @@ export default function AdminCoursesPage() {
     const matchesSearch = !q || c.course_code.toLowerCase().includes(q) || c.course_name.toLowerCase().includes(q);
     const matchesLevel = levelFilter === "all" || c.program_level === levelFilter;
     const matchesPub = pubFilter === "all" || (pubFilter === "published" ? c.is_published : !c.is_published);
-    return matchesSearch && matchesLevel && matchesPub;
+    const matchesMode = modeFilter === "all"
+      || (modeFilter === "day" && (c.tuition_day || 0) > 0)
+      || (modeFilter === "evening" && (c.tuition_evening || 0) > 0)
+      || (modeFilter === "weekend" && (c.tuition_weekend || 0) > 0);
+    return matchesSearch && matchesLevel && matchesPub && matchesMode;
   });
 
   const toggleExpand = (id: string) => {
@@ -314,6 +319,15 @@ export default function AdminCoursesPage() {
                 <SelectItem value="draft">Draft</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={modeFilter} onValueChange={setModeFilter}>
+              <SelectTrigger className="w-full sm:w-44 rounded-xl"><SelectValue placeholder="Study Mode" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Modes</SelectItem>
+                <SelectItem value="day">Day</SelectItem>
+                <SelectItem value="evening">Evening</SelectItem>
+                <SelectItem value="weekend">Weekend</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Table */}
@@ -327,8 +341,8 @@ export default function AdminCoursesPage() {
                 <thead>
                   <tr>
                     <th className="pl-5">Code</th><th>Name</th><th>Level</th><th>Department</th>
-                    <th>Lecturer</th><th className="text-center">Duration</th><th className="text-center">Status</th>
-                    <th className="text-right">Tuition (Day)</th><th className="text-center pr-5">Actions</th>
+                    <th className="text-center">Duration</th><th className="text-center">Status</th>
+                    <th className="text-right">Day</th><th className="text-right">Evening</th><th className="text-right">Weekend</th><th className="text-center pr-5">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -338,14 +352,15 @@ export default function AdminCoursesPage() {
                       <td className="text-sm font-semibold">{c.course_name}</td>
                       <td><Badge variant="outline" className="text-[10px] rounded-md">{c.program_level}</Badge></td>
                       <td className="text-sm">{c.department?.name || "—"}</td>
-                      <td className="text-sm">{getLecturerName(c.lecturer_id)}</td>
                       <td className="text-center text-sm">{c.duration_years}yr</td>
                       <td className="text-center">
                         <Badge variant={c.is_published ? "default" : "secondary"} className="text-[10px] rounded-md">
                           {c.is_published ? "Published" : "Draft"}
                         </Badge>
                       </td>
-                      <td className="text-right text-sm font-mono">UGX {(c.tuition_day || 0).toLocaleString()}</td>
+                      <td className="text-right text-sm font-mono">{(c.tuition_day || 0) > 0 ? `${(c.tuition_day || 0).toLocaleString()}` : "—"}</td>
+                      <td className="text-right text-sm font-mono">{(c.tuition_evening || 0) > 0 ? `${(c.tuition_evening || 0).toLocaleString()}` : "—"}</td>
+                      <td className="text-right text-sm font-mono">{(c.tuition_weekend || 0) > 0 ? `${(c.tuition_weekend || 0).toLocaleString()}` : "—"}</td>
                       <td className="text-center pr-5">
                         <div className="flex items-center justify-center gap-1">
                           <Button size="sm" variant="ghost" className="h-7 w-7 p-0 rounded-lg" onClick={() => openDetail(c)} title="View"><Eye className="w-3.5 h-3.5" /></Button>
