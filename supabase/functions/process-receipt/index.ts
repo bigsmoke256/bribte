@@ -104,6 +104,27 @@ Deno.serve(async (req) => {
     const student = Array.isArray(receipt.student) ? receipt.student[0] : receipt.student;
     const validationFlags: Record<string, any> = {};
 
+    // Fetch student profile name early for notifications
+    const { data: studentProfile } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("user_id", student.user_id)
+      .single();
+    const studentName = studentProfile?.full_name || "Unknown Student";
+    const regNumber = student.registration_number;
+
+    // Helper: reject with admin notification
+    const rejectWithAlert = async (reason: string, reviewNotes: string, responseExtra: Record<string, any> = {}) => {
+      await supabase.from("receipt_uploads").update({
+        status: "rejected",
+        review_notes: reviewNotes,
+      }).eq("id", receipt_id);
+      await supabase.from("receipt_extractions").update({ validation_flags: validationFlags })
+        .eq("receipt_id", receipt_id);
+      await notifyAdminsOfRejection(supabase, studentName, regNumber, reason, reviewNotes, receipt_id);
+      return jsonResponse({ status: "rejected", reason, details: reviewNotes, ...responseExtra });
+    };
+
     // 2. File hash duplicate check
     if (receipt.file_hash) {
       const { data: dup } = await supabase
