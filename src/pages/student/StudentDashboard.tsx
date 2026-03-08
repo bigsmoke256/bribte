@@ -29,8 +29,8 @@ export default function StudentDashboard() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-primary-foreground/60 text-sm font-medium mb-1">Good morning,</p>
-                <h1 className="font-display text-2xl lg:text-3xl font-extrabold mb-1">{user.name} 👋</h1>
-                <p className="text-primary-foreground/70 text-sm">{user.program} — Year {user.year} • {user.studentId}</p>
+                <h1 className="font-display text-2xl lg:text-3xl font-extrabold mb-1">{displayName} 👋</h1>
+                <p className="text-primary-foreground/70 text-sm">Student Portal</p>
               </div>
               <div className="hidden sm:block text-right">
                 <p className="text-primary-foreground/60 text-xs font-medium">Current Semester GPA</p>
