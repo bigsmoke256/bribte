@@ -504,6 +504,42 @@ export type Database = {
         }
         Relationships: []
       }
+      student_fee_selections: {
+        Row: {
+          created_at: string
+          fee_item_id: string
+          id: string
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          fee_item_id: string
+          id?: string
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          fee_item_id?: string
+          id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_fee_selections_fee_item_id_fkey"
+            columns: ["fee_item_id"]
+            isOneToOne: false
+            referencedRelation: "fee_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_fee_selections_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       students: {
         Row: {
           admission_date: string | null
