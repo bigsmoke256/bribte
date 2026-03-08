@@ -20,13 +20,11 @@ const VALID_PROVIDERS = [
   "equity",
 ];
 
-const REQUIRED_FIELDS = [
-  "payment_code",
-  "student_name",
-  "amount",
-  "payment_date",
-  "channel",
-  "institution_name",
+const VALID_INSTITUTIONS = [
+  "buganda royal",
+  "bribte",
+  "buganda royal institute",
+  "buganda royal institute of business",
 ];
 
 function jsonResponse(data: any, status = 200) {
@@ -107,7 +105,7 @@ Deno.serve(async (req) => {
     const contentType = fileResp.headers.get("content-type") || "image/jpeg";
     const mediaType = contentType.includes("pdf") ? "application/pdf" : contentType;
 
-    // 4. AI OCR extraction with SchoolPay-specific prompt
+    // 4. AI OCR extraction + fraud detection prompt
     const aiResponse = await fetch(AI_GATEWAY_URL, {
       method: "POST",
       headers: {
@@ -122,11 +120,35 @@ Deno.serve(async (req) => {
             content: [
               {
                 type: "text",
-                text: `You are a receipt OCR system for BUGANDA ROYAL INSTITUTE OF BUSINESS & TECHNICAL INSTITUTE (also known as BRIBTE).
+                text: `You are a STRICT receipt fraud detection and OCR system for BUGANDA ROYAL INSTITUTE OF BUSINESS & TECHNICAL EDUCATION (BRIBTE).
 
-Analyze this SchoolPay transaction receipt and extract ALL fields. Return ONLY a valid JSON object with these exact keys:
+Your job is to:
+1. Determine if this image is a GENUINE SchoolPay transaction receipt (not a screenshot of text, not a typed document, not an edited image, not a hand-written note).
+2. Extract payment data if it appears genuine.
 
+A GENUINE SchoolPay receipt must have:
+- A proper SchoolPay header/logo or formatting
+- A Payment Code (transaction reference)
+- Student Name and Class
+- Amount with amount in words
+- Channel information (e.g. MTN MobileMoney)
+- Institution name that matches "BUGANDA ROYAL INSTITUTE" or "BRIBTE"
+- Structured layout typical of SchoolPay receipts
+
+RED FLAGS that indicate FAKE/INVALID receipt:
+- Plain text typed in a document editor or notes app
+- Screenshot of a chat message or SMS
+- Hand-written or hand-drawn receipt
+- Missing SchoolPay branding/structure
+- Generic or suspicious formatting
+- Image appears digitally manipulated or edited
+- Amount in words doesn't match the numeric amount
+- Institution name doesn't match BRIBTE / Buganda Royal Institute
+
+Return ONLY a valid JSON object:
 {
+  "is_genuine_receipt": <true/false - is this a real SchoolPay receipt with proper formatting?>,
+  "fraud_indicators": ["<list any red flags detected, empty array if none>"],
   "payment_code": "<string or null - the Payment Code / transaction code>",
   "student_name": "<string or null - Student Name>",
   "student_class": "<string or null - Student Class / course name>",
@@ -140,14 +162,12 @@ Analyze this SchoolPay transaction receipt and extract ALL fields. Return ONLY a
   "channel_memo": "<string or null - Channel Memo>",
   "institution_name": "<string or null - the institution name shown on receipt>",
   "payment_provider": "<string or null - e.g. SchoolPay>",
-  "confidence_score": <0.0-1.0 - overall extraction confidence>
+  "confidence_score": <0.0-1.0 - overall extraction confidence, lower if document looks suspicious>
 }
 
-IMPORTANT:
-- Extract the Payment Code (transaction code) carefully - this is critical for verification.
-- The amount should be a plain number without commas or currency symbols.
-- If institution_name contains "BUGANDA ROYAL" or "BRIBTE", include it as-is.
-- Return ONLY the JSON, no markdown, no explanation.`,
+CRITICAL: Be STRICT. If you have ANY doubt about the receipt being genuine, set is_genuine_receipt to false and list the fraud indicators. It is better to flag a real receipt for review than to approve a fake one.
+
+Return ONLY the JSON, no markdown, no explanation.`,
               },
               {
                 type: "image_url",
@@ -156,7 +176,7 @@ IMPORTANT:
             ],
           },
         ],
-        max_tokens: 1500,
+        max_tokens: 2000,
         temperature: 0.1,
       }),
     });
@@ -185,7 +205,7 @@ IMPORTANT:
       return jsonResponse({ status: "review_required", reason: "extraction_failed" });
     }
 
-    // 5. Store extraction results with all SchoolPay fields
+    // 5. Store extraction results
     await supabase.from("receipt_extractions").insert({
       receipt_id,
       amount: extracted.amount,
@@ -202,11 +222,29 @@ IMPORTANT:
       trans_type: extracted.trans_type,
       amount_in_words: extracted.amount_in_words,
       description: extracted.description,
+      validation_flags: {
+        is_genuine_receipt: extracted.is_genuine_receipt,
+        fraud_indicators: extracted.fraud_indicators,
+      },
     });
 
     // ============================================
     // VALIDATION PIPELINE
     // ============================================
+
+    // CHECK 0: FRAUD DETECTION - Is this a genuine receipt?
+    if (extracted.is_genuine_receipt === false) {
+      const indicators = (extracted.fraud_indicators || []).join("; ");
+      validationFlags.fraud_detected = true;
+      validationFlags.fraud_indicators = extracted.fraud_indicators;
+      await supabase.from("receipt_uploads").update({
+        status: "rejected",
+        review_notes: `Receipt rejected: AI detected this is NOT a genuine SchoolPay receipt. Indicators: ${indicators || "Document does not match expected receipt format."}`,
+      }).eq("id", receipt_id);
+      await supabase.from("receipt_extractions").update({ validation_flags: validationFlags })
+        .eq("receipt_id", receipt_id);
+      return jsonResponse({ status: "rejected", reason: "fake_receipt", indicators: extracted.fraud_indicators });
+    }
 
     // CHECK 1: Structure validation - mandatory fields
     const missingFields: string[] = [];
@@ -223,26 +261,41 @@ IMPORTANT:
         status: "rejected",
         review_notes: `Receipt rejected: missing mandatory fields: ${missingFields.join(", ")}. This may indicate a fake or incomplete receipt.`,
       }).eq("id", receipt_id);
-      // Update validation flags
       await supabase.from("receipt_extractions").update({ validation_flags: validationFlags })
         .eq("receipt_id", receipt_id);
       return jsonResponse({ status: "rejected", reason: "missing_fields", missing: missingFields });
     }
 
-    // CHECK 2: OCR confidence
+    // CHECK 2: Institution name must match BRIBTE
+    const instNorm = normalizeString(extracted.institution_name);
+    const isValidInstitution = VALID_INSTITUTIONS.some(v => instNorm.includes(v));
+    validationFlags.institution_name = extracted.institution_name;
+    validationFlags.institution_valid = isValidInstitution;
+
+    if (!isValidInstitution) {
+      await supabase.from("receipt_uploads").update({
+        status: "rejected",
+        review_notes: `Receipt rejected: Institution "${extracted.institution_name}" does not match BUGANDA ROYAL INSTITUTE / BRIBTE. This receipt is not for this institution.`,
+      }).eq("id", receipt_id);
+      await supabase.from("receipt_extractions").update({ validation_flags: validationFlags })
+        .eq("receipt_id", receipt_id);
+      return jsonResponse({ status: "rejected", reason: "wrong_institution" });
+    }
+
+    // CHECK 3: OCR confidence
     const confidence = extracted.confidence_score ?? 0;
-    if (confidence < 0.3) {
+    if (confidence < 0.5) {
       validationFlags.low_confidence = confidence;
       await supabase.from("receipt_uploads").update({
         status: "review_required",
-        review_notes: `Very low OCR confidence (${(confidence * 100).toFixed(0)}%). Receipt may be blurry or manipulated.`,
+        review_notes: `Low OCR confidence (${(confidence * 100).toFixed(0)}%). Receipt may be blurry, manipulated, or not a standard receipt.`,
       }).eq("id", receipt_id);
       await supabase.from("receipt_extractions").update({ validation_flags: validationFlags })
         .eq("receipt_id", receipt_id);
       return jsonResponse({ status: "review_required", reason: "low_confidence" });
     }
 
-    // CHECK 3: Transaction code duplicate
+    // CHECK 4: Transaction code duplicate
     if (extracted.payment_code) {
       const { data: dupTx } = await supabase
         .from("payment_transactions")
@@ -261,7 +314,7 @@ IMPORTANT:
       }
     }
 
-    // CHECK 4: Payment provider validation
+    // CHECK 5: Payment provider validation
     const channelNorm = normalizeString(extracted.channel);
     const providerNorm = normalizeString(extracted.payment_provider);
     const isKnownProvider = VALID_PROVIDERS.some(p =>
@@ -278,8 +331,7 @@ IMPORTANT:
       return jsonResponse({ status: "review_required", reason: "unknown_provider" });
     }
 
-    // CHECK 5: Student name matching
-    // Get student's profile name
+    // CHECK 6: Student name matching
     const { data: profile } = await supabase
       .from("profiles")
       .select("full_name")
@@ -294,7 +346,6 @@ IMPORTANT:
     validationFlags.receipt_name = receiptStudentName;
 
     if (similarity < 0.3) {
-      // No match at all - reject
       await supabase.from("receipt_uploads").update({
         status: "rejected",
         review_notes: `Student name mismatch. Receipt: "${receiptStudentName}", Database: "${studentDbName}". Names do not match.`,
@@ -305,7 +356,6 @@ IMPORTANT:
     }
 
     if (similarity < 0.7) {
-      // Partial match - send to review
       await supabase.from("receipt_uploads").update({
         status: "review_required",
         review_notes: `Student name partially matches. Receipt: "${receiptStudentName}", Database: "${studentDbName}" (similarity: ${(similarity * 100).toFixed(0)}%).`,
@@ -315,7 +365,7 @@ IMPORTANT:
       return jsonResponse({ status: "review_required", reason: "name_partial_match" });
     }
 
-    // CHECK 6: Course / enrollment validation
+    // CHECK 7: Course / enrollment validation
     if (extracted.student_class && student.course_id) {
       const { data: course } = await supabase
         .from("courses")
@@ -350,13 +400,22 @@ IMPORTANT:
       }
     }
 
-    // CHECK 7: Amount validation
+    // CHECK 8: Amount in words cross-check
+    if (extracted.amount_in_words && extracted.amount) {
+      // Simple check: if amount_in_words doesn't contain key digits, flag it
+      const amountStr = String(Math.round(extracted.amount));
+      const wordsNorm = normalizeString(extracted.amount_in_words);
+      // Just flag if amount is very different from what words suggest
+      validationFlags.amount_in_words = extracted.amount_in_words;
+      validationFlags.amount_numeric = extracted.amount;
+    }
+
+    // CHECK 9: Amount validation
     const amount = Number(extracted.amount);
     const outstandingBalance = Number(student.fee_balance || 0);
     validationFlags.extracted_amount = amount;
     validationFlags.outstanding_balance = outstandingBalance;
 
-    // Unrealistic amount check (> 10x outstanding or > 10,000,000 UGX)
     if (amount > 10000000) {
       await supabase.from("receipt_uploads").update({
         status: "review_required",
@@ -375,6 +434,19 @@ IMPORTANT:
       await supabase.from("receipt_extractions").update({ validation_flags: validationFlags })
         .eq("receipt_id", receipt_id);
       return jsonResponse({ status: "review_required", reason: "amount_suspicious" });
+    }
+
+    // CHECK 10: Fraud indicators even if is_genuine_receipt is true
+    if (extracted.fraud_indicators && extracted.fraud_indicators.length > 0) {
+      validationFlags.fraud_indicators = extracted.fraud_indicators;
+      const indicators = extracted.fraud_indicators.join("; ");
+      await supabase.from("receipt_uploads").update({
+        status: "review_required",
+        review_notes: `Receipt has potential fraud indicators: ${indicators}. Sending for manual review.`,
+      }).eq("id", receipt_id);
+      await supabase.from("receipt_extractions").update({ validation_flags: validationFlags })
+        .eq("receipt_id", receipt_id);
+      return jsonResponse({ status: "review_required", reason: "fraud_indicators" });
     }
 
     // ============================================

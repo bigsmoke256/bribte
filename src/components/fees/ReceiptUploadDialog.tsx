@@ -109,6 +109,8 @@ export function ReceiptUploadDialog({ open, onOpenChange, studentId, courseId, o
           duplicate_transaction: "This transaction code has already been processed.",
           missing_fields: `Receipt is missing required fields${result.missing ? ": " + result.missing.join(", ") : ""}. Please upload a valid SchoolPay receipt.`,
           name_mismatch: "The student name on the receipt does not match your records.",
+          fake_receipt: `This does not appear to be a genuine SchoolPay receipt.${result.indicators?.length ? " Issues: " + result.indicators.join(", ") : ""} Please upload an authentic receipt.`,
+          wrong_institution: "The institution on the receipt does not match Buganda Royal Institute / BRIBTE. Please upload a receipt for this institution.",
         };
         setStatusMessage(reasonMap[result.reason] || "Receipt was rejected. Please upload a valid SchoolPay payment receipt.");
         toast.error("Receipt rejected");
