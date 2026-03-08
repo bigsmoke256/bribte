@@ -82,6 +82,11 @@ Deno.serve(async (req) => {
     await supabase.from("lecturers").insert({ user_id: userId });
   }
 
+  // If student, create student record (handle_new_user trigger won't fire for admin-created users)
+  if (role === "student") {
+    await supabase.from("students").insert({ user_id: userId, status: "pending" });
+  }
+
   return new Response(JSON.stringify({ success: true, user_id: userId }), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
