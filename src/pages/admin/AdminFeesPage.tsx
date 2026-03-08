@@ -578,11 +578,31 @@ export default function AdminFeesPage() {
                   <div>
                     <DialogTitle className="font-display">{historyStudent.profile?.full_name}</DialogTitle>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {historyStudent.registration_number || "No Reg#"} · Balance: <span className={`font-mono font-semibold ${historyStudent.fee_balance > 0 ? "text-destructive" : "text-green-600 dark:text-green-400"}`}>UGX {historyStudent.fee_balance.toLocaleString()}</span>
+                      {historyStudent.registration_number || "No Reg#"} · {historyStudent.course?.course_name || "No course"} · {historyStudent.study_mode}
                     </p>
                   </div>
                 </div>
               </DialogHeader>
+
+              {/* Fee Summary */}
+              <div className="grid grid-cols-3 gap-3 mt-2">
+                <div className="p-3 rounded-xl bg-muted/40 text-center">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase">Tuition</p>
+                  <p className="font-display font-bold text-sm mt-1">UGX {(historyStudent.tuition || 0).toLocaleString()}</p>
+                </div>
+                <div className="p-3 rounded-xl bg-green-500/5 text-center">
+                  <p className="text-[10px] font-semibold text-green-600 dark:text-green-400 uppercase">Paid</p>
+                  <p className="font-display font-bold text-sm mt-1 text-green-600 dark:text-green-400">UGX {(historyStudent.totalPaid || 0).toLocaleString()}</p>
+                </div>
+                <div className={`p-3 rounded-xl text-center ${historyStudent.fee_balance > 0 ? "bg-destructive/5" : "bg-green-500/5"}`}>
+                  <p className={`text-[10px] font-semibold uppercase ${historyStudent.fee_balance > 0 ? "text-destructive" : "text-green-600 dark:text-green-400"}`}>
+                    {historyStudent.fee_balance > 0 ? "Balance" : "Status"}
+                  </p>
+                  <p className={`font-display font-bold text-sm mt-1 ${historyStudent.fee_balance > 0 ? "text-destructive" : "text-green-600 dark:text-green-400"}`}>
+                    {historyStudent.fee_balance > 0 ? `UGX ${historyStudent.fee_balance.toLocaleString()}` : "✓ Cleared"}
+                  </p>
+                </div>
+              </div>
 
               <div className="mt-4">
                 <h3 className="text-sm font-semibold mb-3">Payment History ({studentPayments.length})</h3>
