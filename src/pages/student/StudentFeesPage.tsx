@@ -2,7 +2,7 @@ import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState, useMemo } from "react";
 import { AnimatedCard, SectionHeader, EmptyState } from "@/components/dashboard/DashboardParts";
-import { CreditCard, Upload, CheckCircle, Clock, XCircle, Receipt, Info } from "lucide-react";
+import { CreditCard, Upload, CheckCircle, Clock, XCircle, Receipt, Info, FileDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
