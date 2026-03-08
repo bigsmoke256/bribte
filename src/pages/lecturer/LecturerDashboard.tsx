@@ -27,8 +27,8 @@ export default function LecturerDashboard() {
           <div className="relative z-10 flex items-start justify-between">
             <div>
               <p className="text-primary-foreground/60 text-sm font-medium mb-1">Welcome back,</p>
-              <h1 className="font-display text-2xl lg:text-3xl font-extrabold">{user.name}</h1>
-              <p className="text-primary-foreground/70 text-sm mt-1">{user.department} Department</p>
+              <h1 className="font-display text-2xl lg:text-3xl font-extrabold">{user.fullName}</h1>
+              <p className="text-primary-foreground/70 text-sm mt-1">Lecturer Portal</p>
             </div>
             <Button size="sm" className="bg-primary-foreground/15 hover:bg-primary-foreground/25 text-primary-foreground border-0 rounded-xl hidden sm:flex">
               <PlusCircle className="w-4 h-4 mr-2" /> New Assignment
