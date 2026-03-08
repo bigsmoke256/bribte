@@ -38,6 +38,7 @@ export default function AdminCoursesPage() {
   const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [levelFilter, setLevelFilter] = useState("all");
   const [dialog, setDialog] = useState(false);
   const [editing, setEditing] = useState<CourseRow | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -87,9 +88,13 @@ export default function AdminCoursesPage() {
     if (!error) { toast.success("Deleted"); fetch(); } else toast.error(error.message);
   };
 
+  const programLevels = [...new Set(courses.map(c => c.program_level))].sort();
+
   const filtered = courses.filter(c => {
     const q = search.toLowerCase();
-    return !q || c.course_code.toLowerCase().includes(q) || c.course_name.toLowerCase().includes(q);
+    const matchesSearch = !q || c.course_code.toLowerCase().includes(q) || c.course_name.toLowerCase().includes(q);
+    const matchesLevel = levelFilter === "all" || c.program_level === levelFilter;
+    return matchesSearch && matchesLevel;
   });
 
   if (!user) return null;
@@ -107,10 +112,21 @@ export default function AdminCoursesPage() {
         </motion.div>
 
         <AnimatedCard>
-          <div className="flex items-center gap-2 bg-muted/60 rounded-xl px-3.5 py-2 w-full sm:w-72 border border-transparent focus-within:border-primary/20 mb-4">
-            <Search className="w-4 h-4 text-muted-foreground" />
-            <Input placeholder="Search courses..." value={search} onChange={e => setSearch(e.target.value)}
-              className="border-0 bg-transparent p-0 h-auto text-sm focus-visible:ring-0" />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-4">
+            <div className="flex items-center gap-2 bg-muted/60 rounded-xl px-3.5 py-2 w-full sm:w-72 border border-transparent focus-within:border-primary/20">
+              <Search className="w-4 h-4 text-muted-foreground" />
+              <Input placeholder="Search courses..." value={search} onChange={e => setSearch(e.target.value)}
+                className="border-0 bg-transparent p-0 h-auto text-sm focus-visible:ring-0" />
+            </div>
+            <Select value={levelFilter} onValueChange={setLevelFilter}>
+              <SelectTrigger className="w-full sm:w-48 rounded-xl">
+                <SelectValue placeholder="All Levels" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Levels</SelectItem>
+                {programLevels.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
 
           {loading ? (
