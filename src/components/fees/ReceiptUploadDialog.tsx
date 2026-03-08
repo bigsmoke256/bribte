@@ -94,10 +94,13 @@ export function ReceiptUploadDialog({ open, onOpenChange, studentId, courseId, o
         toast.info("Receipt submitted for admin review");
       } else if (result.status === "rejected") {
         setStatus("rejected");
-        const reason = result.reason === "duplicate_file" ? "This receipt has already been uploaded."
-          : result.reason === "duplicate_transaction" ? "This transaction ID has already been processed."
-          : "Receipt was rejected. Please upload a valid payment document.";
-        setStatusMessage(reason);
+        const reasonMap: Record<string, string> = {
+          duplicate_file: "This exact receipt file has already been uploaded.",
+          duplicate_transaction: "This transaction code has already been processed.",
+          missing_fields: `Receipt is missing required fields${result.missing ? ": " + result.missing.join(", ") : ""}. Please upload a valid SchoolPay receipt.`,
+          name_mismatch: "The student name on the receipt does not match your records.",
+        };
+        setStatusMessage(reasonMap[result.reason] || "Receipt was rejected. Please upload a valid SchoolPay payment receipt.");
         toast.error("Receipt rejected");
       }
 
