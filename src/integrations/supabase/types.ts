@@ -716,39 +716,63 @@ export type Database = {
       receipt_extractions: {
         Row: {
           amount: number | null
+          amount_in_words: string | null
+          channel_depositor: string | null
+          channel_memo: string | null
           confidence_score: number | null
           created_at: string
+          description: string | null
           id: string
+          institution_name: string | null
           payment_date: string | null
           payment_provider: string | null
           raw_text: string | null
           receipt_id: string
           sender_name: string | null
+          student_class: string | null
+          trans_type: string | null
           transaction_id: string | null
+          validation_flags: Json | null
         }
         Insert: {
           amount?: number | null
+          amount_in_words?: string | null
+          channel_depositor?: string | null
+          channel_memo?: string | null
           confidence_score?: number | null
           created_at?: string
+          description?: string | null
           id?: string
+          institution_name?: string | null
           payment_date?: string | null
           payment_provider?: string | null
           raw_text?: string | null
           receipt_id: string
           sender_name?: string | null
+          student_class?: string | null
+          trans_type?: string | null
           transaction_id?: string | null
+          validation_flags?: Json | null
         }
         Update: {
           amount?: number | null
+          amount_in_words?: string | null
+          channel_depositor?: string | null
+          channel_memo?: string | null
           confidence_score?: number | null
           created_at?: string
+          description?: string | null
           id?: string
+          institution_name?: string | null
           payment_date?: string | null
           payment_provider?: string | null
           raw_text?: string | null
           receipt_id?: string
           sender_name?: string | null
+          student_class?: string | null
+          trans_type?: string | null
           transaction_id?: string | null
+          validation_flags?: Json | null
         }
         Relationships: [
           {
