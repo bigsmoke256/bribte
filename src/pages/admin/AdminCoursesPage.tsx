@@ -88,9 +88,13 @@ export default function AdminCoursesPage() {
     if (!error) { toast.success("Deleted"); fetch(); } else toast.error(error.message);
   };
 
+  const programLevels = [...new Set(courses.map(c => c.program_level))].sort();
+
   const filtered = courses.filter(c => {
     const q = search.toLowerCase();
-    return !q || c.course_code.toLowerCase().includes(q) || c.course_name.toLowerCase().includes(q);
+    const matchesSearch = !q || c.course_code.toLowerCase().includes(q) || c.course_name.toLowerCase().includes(q);
+    const matchesLevel = levelFilter === "all" || c.program_level === levelFilter;
+    return matchesSearch && matchesLevel;
   });
 
   if (!user) return null;
