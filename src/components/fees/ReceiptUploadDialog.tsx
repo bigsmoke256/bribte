@@ -175,7 +175,7 @@ export function ReceiptUploadDialog({ open, onOpenChange, studentId, courseId, o
                  status === "rejected" ? "Receipt Rejected" :
                  "Error"}
               </p>
-              <p className="text-xs text-muted-foreground mt-2 max-w-[280px]">{statusMessage}</p>
+              <p className="text-xs text-muted-foreground mt-2 max-w-[280px] whitespace-pre-line">{statusMessage}</p>
             </motion.div>
           )}
         </AnimatePresence>
