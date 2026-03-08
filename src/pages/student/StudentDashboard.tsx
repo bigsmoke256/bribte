@@ -11,6 +11,7 @@ import StudentAnnouncementsPage from "./StudentAnnouncementsPage";
 import StudentExamCardPage from "./StudentExamCardPage";
 import StudentClearancePage from "./StudentClearancePage";
 import ProfileSettingsPage from "../shared/ProfileSettingsPage";
+import HelpSupportPage from "../shared/HelpSupportPage";
 
 export default function StudentDashboard() {
   return (
