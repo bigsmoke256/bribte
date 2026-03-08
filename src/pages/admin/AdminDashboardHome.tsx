@@ -244,6 +244,5 @@ export default function AdminDashboardHome() {
           </div>
         </AnimatedCard>
       </div>
-    </DashboardLayout>
   );
 }
