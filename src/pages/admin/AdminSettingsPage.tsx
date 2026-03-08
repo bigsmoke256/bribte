@@ -331,6 +331,5 @@ export default function AdminSettingsPage() {
           </Tabs>
         )}
       </div>
-    </DashboardLayout>
   );
 }
