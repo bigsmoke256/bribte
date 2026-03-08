@@ -244,13 +244,21 @@ export default function StudentFeesPage() {
         <AnimatedCard delay={0.1}>
           <p className="text-xs text-muted-foreground mb-1">Outstanding Balance</p>
           <p className={`font-display text-2xl font-bold ${stats.balance > 0 ? "text-destructive" : "text-success"}`}>
-            UGX {stats.balance.toLocaleString()}
+            {stats.balance < 0 ? `UGX -${Math.abs(stats.balance).toLocaleString()} (Credit)` : `UGX ${stats.balance.toLocaleString()}`}
           </p>
-          {stats.balance > 0 && (
+          {stats.balance > 0 ? (
             <p className="text-xs text-destructive mt-1 flex items-center gap-1">
               <Info className="w-3 h-3" /> Please clear your balance to avoid penalties
             </p>
-          )}
+          ) : stats.balance < 0 ? (
+            <p className="text-xs text-success mt-1 flex items-center gap-1">
+              <CheckCircle className="w-3 h-3" /> Credit will apply to next semester
+            </p>
+          ) : stats.totalPaid > 0 ? (
+            <p className="text-xs text-success mt-1 flex items-center gap-1">
+              <CheckCircle className="w-3 h-3" /> Fully paid!
+            </p>
+          ) : null}
         </AnimatedCard>
       </div>
 
