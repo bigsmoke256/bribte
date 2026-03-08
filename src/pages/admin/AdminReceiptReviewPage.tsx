@@ -347,7 +347,15 @@ export default function AdminReceiptReviewPage() {
               {/* Receipt Image */}
               <div className="rounded-xl border overflow-hidden bg-muted/30">
                 {selectedReceipt.file_url.endsWith(".pdf") ? (
-                  <iframe src={selectedReceipt.file_url} className="w-full h-64" />
+                  <div className="flex flex-col items-center justify-center py-8 gap-3">
+                    <FileText className="w-12 h-12 text-primary" />
+                    <p className="text-sm text-muted-foreground">PDF Receipt</p>
+                    <Button variant="outline" size="sm" asChild>
+                      <a href={selectedReceipt.file_url} target="_blank" rel="noopener noreferrer">
+                        <Eye className="w-4 h-4 mr-2" /> Open PDF in New Tab
+                      </a>
+                    </Button>
+                  </div>
                 ) : (
                   <img src={selectedReceipt.file_url} alt="Receipt" className="w-full max-h-64 object-contain" />
                 )}
