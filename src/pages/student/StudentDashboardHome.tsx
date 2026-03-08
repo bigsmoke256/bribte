@@ -5,9 +5,7 @@ import { CreditCard, FileText, BookOpen, Bell, Upload, AlertTriangle, Graduation
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { ReceiptUploadDialog } from "@/components/fees/ReceiptUploadDialog";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState, useMemo } from "react";
@@ -28,9 +26,6 @@ export default function StudentDashboardHome() {
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploadOpen, setUploadOpen] = useState(false);
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
-  const [uploadAmount, setUploadAmount] = useState("");
-  const [uploading, setUploading] = useState(false);
 
   useEffect(() => { if (user) loadData(); }, [user]);
 
@@ -74,23 +69,6 @@ export default function StudentDashboardHome() {
 
   const pendingAssignments = assignmentList.filter(a => a.effectiveStatus === "pending" || a.effectiveStatus === "submitted");
 
-  async function handleUploadReceipt() {
-    if (!student || !uploadFile || !uploadAmount) return;
-    setUploading(true);
-    try {
-      const ext = uploadFile.name.split(".").pop();
-      const path = `${student.id}/${Date.now()}.${ext}`;
-      const { error: ue } = await supabase.storage.from("receipts").upload(path, uploadFile);
-      if (ue) throw ue;
-      const { data: u } = supabase.storage.from("receipts").getPublicUrl(path);
-      const { error: ie } = await supabase.from("payments").insert({ student_id: student.id, amount: parseFloat(uploadAmount), receipt_url: u.publicUrl, payment_status: "pending" });
-      if (ie) throw ie;
-      toast.success("Receipt uploaded! Awaiting approval.");
-      setUploadOpen(false); setUploadFile(null); setUploadAmount("");
-      loadData();
-    } catch (e: any) { toast.error(e.message || "Upload failed"); }
-    finally { setUploading(false); }
-  }
 
   if (!user) return null;
   const displayName = user.fullName || user.email;
@@ -158,7 +136,7 @@ export default function StudentDashboardHome() {
               <div className="p-3 rounded-xl bg-success-light"><p className="text-[10px] text-success font-semibold uppercase tracking-wider">Paid</p><p className="font-display font-bold text-success text-sm mt-0.5">UGX {feeStats.totalPaid.toLocaleString()}</p></div>
               <div className="p-3 rounded-xl bg-destructive/5"><p className="text-[10px] text-destructive font-semibold uppercase tracking-wider">Balance</p><p className="font-display font-bold text-destructive text-sm mt-0.5">UGX {feeStats.balance.toLocaleString()}</p></div>
             </div>
-            <Button variant="outline" size="sm" className="w-full rounded-xl" onClick={() => setUploadOpen(true)}><Upload className="w-3.5 h-3.5 mr-2" /> Upload Payment Receipt</Button>
+            <Button variant="outline" size="sm" className="w-full rounded-xl" onClick={() => setUploadOpen(true)}><Upload className="w-3.5 h-3.5 mr-2" /> Upload Receipt (AI Verified)</Button>
             {payments.length > 0 && (
               <div className="space-y-2 pt-2 border-t">
                 <p className="text-xs font-semibold text-muted-foreground">Recent Payments</p>
@@ -214,19 +192,7 @@ export default function StudentDashboardHome() {
         </AnimatedCard>
       </div>
 
-      <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Upload Payment Receipt</DialogTitle><DialogDescription>Upload your payment receipt for verification.</DialogDescription></DialogHeader>
-          <div className="space-y-4 py-2">
-            <div><Label>Amount Paid (UGX)</Label><Input type="number" placeholder="e.g. 500000" value={uploadAmount} onChange={e => setUploadAmount(e.target.value)} /></div>
-            <div><Label>Receipt File</Label><Input type="file" accept="image/*,.pdf" onChange={e => setUploadFile(e.target.files?.[0] || null)} /></div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setUploadOpen(false)}>Cancel</Button>
-            <Button onClick={handleUploadReceipt} disabled={uploading || !uploadFile || !uploadAmount}>{uploading ? "Uploading..." : "Submit Receipt"}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ReceiptUploadDialog open={uploadOpen} onOpenChange={setUploadOpen} studentId={student.id} courseId={student.course_id} onComplete={loadData} />
     </div>
   );
 }
