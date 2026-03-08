@@ -32,6 +32,8 @@ Deno.serve(async (req) => {
       .single();
     if (rErr || !receipt) throw new Error("Receipt not found");
 
+    const student = Array.isArray(receipt.student) ? receipt.student[0] : receipt.student;
+
     // 2. Check duplicate file hash
     if (receipt.file_hash) {
       const { data: dup } = await supabase
@@ -43,9 +45,7 @@ Deno.serve(async (req) => {
         .limit(1);
       if (dup && dup.length > 0) {
         await supabase.from("receipt_uploads").update({ status: "rejected", review_notes: "Duplicate file detected" }).eq("id", receipt_id);
-        return new Response(JSON.stringify({ status: "rejected", reason: "duplicate_file" }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return jsonResponse({ status: "rejected", reason: "duplicate_file" });
       }
     }
 
@@ -55,7 +55,6 @@ Deno.serve(async (req) => {
     if (!fileResp.ok) throw new Error("Failed to fetch receipt file");
     const fileBuffer = await fileResp.arrayBuffer();
     const base64 = btoa(String.fromCharCode(...new Uint8Array(fileBuffer)));
-
     const contentType = fileResp.headers.get("content-type") || "image/jpeg";
     const mediaType = contentType.includes("pdf") ? "application/pdf" : contentType;
 
@@ -74,28 +73,22 @@ Deno.serve(async (req) => {
             content: [
               {
                 type: "text",
-                text: `You are a payment receipt OCR extraction system. Analyze this receipt image and extract the following fields. Return ONLY a valid JSON object with these fields:
+                text: `You are a payment receipt OCR extraction system for a university fee payment system. Analyze this receipt image and extract payment details. Return ONLY a valid JSON object:
 {
-  "amount": <number or null>,
-  "transaction_id": "<string or null>",
+  "amount": <number or null - the payment amount WITHOUT currency symbols>,
+  "transaction_id": "<string or null - any reference/receipt/transaction number>",
   "payment_date": "<YYYY-MM-DD or null>",
-  "sender_name": "<string or null>",
-  "payment_provider": "<string or null - e.g. MTN Mobile Money, Airtel Money, Bank name, etc>",
-  "confidence_score": <0.0-1.0 float indicating your confidence in the extraction>
+  "sender_name": "<string or null - the payer's name>",
+  "payment_provider": "<string or null - e.g. MTN Mobile Money, Airtel Money, Bank name>",
+  "confidence_score": <0.0-1.0 indicating confidence in the amount extraction>
 }
 
-Important:
-- Amount should be a number without currency symbols
-- Transaction ID is any reference number, receipt number, or transaction code
-- Payment date in YYYY-MM-DD format
-- Be honest about confidence - if the image is unclear, set a low score
-- Return ONLY the JSON, no markdown, no explanation`,
+CRITICAL: The most important field is "amount". Try your best to extract it. If you can read any number that looks like a payment amount, extract it. Be generous with confidence if you can clearly see an amount.
+Return ONLY the JSON, no markdown, no explanation.`,
               },
               {
                 type: "image_url",
-                image_url: {
-                  url: `data:${mediaType};base64,${base64}`,
-                },
+                image_url: { url: `data:${mediaType};base64,${base64}` },
               },
             ],
           },
@@ -123,14 +116,12 @@ Important:
     }
 
     if (!extracted) {
-      await supabase.from("receipt_uploads").update({ status: "review_required", review_notes: "OCR extraction failed to parse" }).eq("id", receipt_id);
-      return new Response(JSON.stringify({ status: "review_required", reason: "extraction_failed" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      await supabase.from("receipt_uploads").update({ status: "review_required", review_notes: "AI could not parse receipt content" }).eq("id", receipt_id);
+      return jsonResponse({ status: "review_required", reason: "extraction_failed" });
     }
 
     // 5. Store extraction results
-    const { error: exErr } = await supabase.from("receipt_extractions").insert({
+    await supabase.from("receipt_extractions").insert({
       receipt_id,
       amount: extracted.amount,
       transaction_id: extracted.transaction_id,
@@ -140,17 +131,8 @@ Important:
       raw_text: rawContent,
       confidence_score: extracted.confidence_score ?? 0.5,
     });
-    if (exErr) console.error("Extraction insert error:", exErr);
 
-    // 6. Run verification
-    const issues: string[] = [];
-
-    // Check confidence
-    if ((extracted.confidence_score ?? 0) < 0.6) {
-      issues.push("Low OCR confidence score");
-    }
-
-    // Check duplicate transaction ID
+    // 6. Check duplicate transaction ID
     if (extracted.transaction_id) {
       const { data: dupTx } = await supabase
         .from("payment_transactions")
@@ -159,57 +141,40 @@ Important:
         .limit(1);
       if (dupTx && dupTx.length > 0) {
         await supabase.from("receipt_uploads").update({ status: "rejected", review_notes: "Duplicate transaction ID: " + extracted.transaction_id }).eq("id", receipt_id);
-        return new Response(JSON.stringify({ status: "rejected", reason: "duplicate_transaction" }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return jsonResponse({ status: "rejected", reason: "duplicate_transaction" });
       }
-    } else {
-      issues.push("No transaction ID extracted");
     }
 
-    // Check amount validity
+    // 7. Decide: auto-approve or send to review
+    // Only send to review if we truly cannot extract an amount
     if (!extracted.amount || extracted.amount <= 0) {
-      issues.push("Invalid or missing amount");
-    }
-
-    // Check student enrollment
-    const student = Array.isArray(receipt.student) ? receipt.student[0] : receipt.student;
-    if (receipt.course_id && student) {
-      const { data: enrollment } = await supabase
-        .from("enrollments")
-        .select("id")
-        .eq("student_id", student.id)
-        .eq("course_id", receipt.course_id)
-        .limit(1);
-      if (!enrollment || enrollment.length === 0) {
-        issues.push("Student not enrolled in specified course");
-      }
-    }
-
-    // 7. Decide outcome
-    if (issues.length > 0) {
       await supabase.from("receipt_uploads").update({
         status: "review_required",
-        review_notes: issues.join("; "),
+        review_notes: "Could not extract payment amount from receipt",
       }).eq("id", receipt_id);
-
-      return new Response(JSON.stringify({ status: "review_required", issues }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse({ status: "review_required", reason: "no_amount" });
     }
 
-    // 8. All checks passed - apply payment
-    // Insert payment record
+    // Very low confidence AND no transaction ID = send to review
+    if ((extracted.confidence_score ?? 0) < 0.3 && !extracted.transaction_id) {
+      await supabase.from("receipt_uploads").update({
+        status: "review_required",
+        review_notes: "Very low confidence and no transaction reference",
+      }).eq("id", receipt_id);
+      return jsonResponse({ status: "review_required", reason: "low_confidence" });
+    }
+
+    // 8. AUTO-APPROVE: Apply payment immediately
     const { error: payErr } = await supabase.from("payments").insert({
       student_id: student.id,
       amount: extracted.amount,
       payment_status: "approved",
       receipt_url: receipt.file_url,
-      notes: `Auto-verified. Tx: ${extracted.transaction_id || "N/A"}. Provider: ${extracted.payment_provider || "N/A"}`,
+      notes: `AI-verified. Amount: ${extracted.amount}. Tx: ${extracted.transaction_id || "N/A"}. Provider: ${extracted.payment_provider || "N/A"}. Confidence: ${(extracted.confidence_score * 100).toFixed(0)}%`,
     });
     if (payErr) throw new Error("Failed to create payment: " + payErr.message);
 
-    // Insert payment transaction for duplicate tracking
+    // Track transaction ID for duplicate prevention
     if (extracted.transaction_id) {
       await supabase.from("payment_transactions").insert({
         student_id: student.id,
@@ -220,14 +185,23 @@ Important:
       });
     }
 
-    // Recalculate fee balance
+    // Recalculate fee balance (supports overpayment/credit)
     await supabase.rpc("recalculate_fee_balance", { p_student_id: student.id });
+
+    // Get updated balance for response
+    const { data: updatedStudent } = await supabase
+      .from("students")
+      .select("fee_balance")
+      .eq("id", student.id)
+      .single();
 
     // Update receipt status
     await supabase.from("receipt_uploads").update({ status: "verified" }).eq("id", receipt_id);
 
-    return new Response(JSON.stringify({ status: "verified", extracted }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    return jsonResponse({
+      status: "verified",
+      extracted,
+      new_balance: updatedStudent?.fee_balance ?? null,
     });
   } catch (error: unknown) {
     console.error("process-receipt error:", error);
@@ -238,3 +212,10 @@ Important:
     });
   }
 });
+
+function jsonResponse(data: any, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type", "Content-Type": "application/json" },
+  });
+}

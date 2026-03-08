@@ -195,7 +195,7 @@ export default function StudentFeesPage() {
       </div>
 
       {/* Balance Alert */}
-      {stats.balance > 0 && (
+      {stats.balance > 0 ? (
         <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
           className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 flex items-start gap-3">
           <Info className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
@@ -206,7 +206,27 @@ export default function StudentFeesPage() {
             </p>
           </div>
         </motion.div>
-      )}
+      ) : stats.balance < 0 ? (
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+          className="rounded-xl border border-primary/30 bg-primary/5 p-4 flex items-start gap-3">
+          <CheckCircle className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-success">Overpayment Credit: UGX {Math.abs(stats.balance).toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              You have a credit of UGX {Math.abs(stats.balance).toLocaleString()} which will be applied to your next semester fees.
+            </p>
+          </div>
+        </motion.div>
+      ) : stats.totalPaid > 0 ? (
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+          className="rounded-xl border border-success/30 bg-success/5 p-4 flex items-start gap-3">
+          <CheckCircle className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-success">Fees Fully Paid</p>
+            <p className="text-xs text-muted-foreground mt-0.5">All fees for this semester have been cleared. Thank you!</p>
+          </div>
+        </motion.div>
+      ) : null}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -224,13 +244,21 @@ export default function StudentFeesPage() {
         <AnimatedCard delay={0.1}>
           <p className="text-xs text-muted-foreground mb-1">Outstanding Balance</p>
           <p className={`font-display text-2xl font-bold ${stats.balance > 0 ? "text-destructive" : "text-success"}`}>
-            UGX {stats.balance.toLocaleString()}
+            {stats.balance < 0 ? `UGX -${Math.abs(stats.balance).toLocaleString()} (Credit)` : `UGX ${stats.balance.toLocaleString()}`}
           </p>
-          {stats.balance > 0 && (
+          {stats.balance > 0 ? (
             <p className="text-xs text-destructive mt-1 flex items-center gap-1">
               <Info className="w-3 h-3" /> Please clear your balance to avoid penalties
             </p>
-          )}
+          ) : stats.balance < 0 ? (
+            <p className="text-xs text-success mt-1 flex items-center gap-1">
+              <CheckCircle className="w-3 h-3" /> Credit will apply to next semester
+            </p>
+          ) : stats.totalPaid > 0 ? (
+            <p className="text-xs text-success mt-1 flex items-center gap-1">
+              <CheckCircle className="w-3 h-3" /> Fully paid!
+            </p>
+          ) : null}
         </AnimatedCard>
       </div>
 
