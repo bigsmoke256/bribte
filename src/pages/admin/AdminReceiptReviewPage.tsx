@@ -118,13 +118,15 @@ export default function AdminReceiptReviewPage() {
 
       // Track transaction
       if (ext.transaction_id) {
-        await supabase.from("payment_transactions").insert({
-          student_id: r.student_id,
-          course_id: r.course_id,
-          transaction_id: ext.transaction_id,
-          amount: ext.amount,
-          receipt_id: r.id,
-        }).catch(() => {}); // ignore if duplicate
+        try {
+          await supabase.from("payment_transactions").insert({
+            student_id: r.student_id,
+            course_id: r.course_id,
+            transaction_id: ext.transaction_id,
+            amount: ext.amount,
+            receipt_id: r.id,
+          });
+        } catch { /* ignore duplicate */ }
       }
 
       // Recalculate
