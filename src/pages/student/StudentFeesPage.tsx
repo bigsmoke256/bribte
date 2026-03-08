@@ -30,6 +30,8 @@ export default function StudentFeesPage() {
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadAmount, setUploadAmount] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [receiptOpen, setReceiptOpen] = useState(false);
+  const [receiptPayment, setReceiptPayment] = useState<any>(null);
 
   useEffect(() => { if (user) loadData(); }, [user]);
 
