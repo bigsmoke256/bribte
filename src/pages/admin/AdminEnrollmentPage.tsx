@@ -36,12 +36,18 @@ export default function AdminEnrollmentPage() {
   const fetchData = async () => {
     setLoading(true);
     const { data } = await supabase.from("enrollments")
-      .select("*, student:students!enrollments_student_id_fkey(registration_number, profile:profiles!students_user_id_fkey(full_name)), course:courses!enrollments_course_id_fkey(course_name, course_code)")
+      .select("*, student:students(registration_number, user_id), course:courses(course_name, course_code)")
       .order("created_at", { ascending: false });
     if (data) {
+      const userIds = data.map((e: any) => {
+        const student = Array.isArray(e.student) ? e.student[0] : e.student;
+        return student?.user_id;
+      }).filter(Boolean);
+      const { data: profilesData } = await supabase.from("profiles").select("user_id, full_name").in("user_id", userIds);
+      const profileMap = new Map((profilesData || []).map(p => [p.user_id, p]));
       setEnrollments(data.map((e: any) => {
         const student = Array.isArray(e.student) ? e.student[0] : e.student;
-        if (student) student.profile = Array.isArray(student.profile) ? student.profile[0] : student.profile;
+        if (student) student.profile = profileMap.get(student.user_id) || null;
         return { ...e, student, course: Array.isArray(e.course) ? e.course[0] : e.course };
       }));
     }
