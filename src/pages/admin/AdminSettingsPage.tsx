@@ -1,5 +1,4 @@
 import { useAuth } from "@/lib/auth-context";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { AnimatedCard, SectionHeader } from "@/components/dashboard/DashboardParts";
 import { Settings, Building2, GraduationCap, CreditCard, UserCheck, Save, Loader2, RefreshCw, Shield, Eye, EyeOff, KeyRound, Lock } from "lucide-react";
 import { motion } from "framer-motion";
@@ -162,7 +161,6 @@ export default function AdminSettingsPage() {
   );
 
   return (
-    <DashboardLayout>
       <div className="space-y-6 max-w-[1400px] mx-auto">
         <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
           <div>
@@ -333,6 +331,5 @@ export default function AdminSettingsPage() {
           </Tabs>
         )}
       </div>
-    </DashboardLayout>
   );
 }

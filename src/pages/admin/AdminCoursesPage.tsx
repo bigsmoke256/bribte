@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { AnimatedCard, EmptyState } from "@/components/dashboard/DashboardParts";
 import {
   BookOpen, Search, PlusCircle, Edit2, Trash2, Eye, Upload,
@@ -282,7 +281,7 @@ export default function AdminCoursesPage() {
   if (!user) return null;
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6 max-w-[1400px] mx-auto">
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }}
@@ -596,6 +595,6 @@ export default function AdminCoursesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </DashboardLayout>
+    </>
   );
 }

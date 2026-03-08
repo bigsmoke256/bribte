@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
@@ -245,7 +244,6 @@ export default function AdminTimetablePage() {
   const totalEntries = selectedDays.length * timeSlots.length;
 
   return (
-    <DashboardLayout>
       <div className="space-y-6 max-w-[1400px] mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -512,6 +510,5 @@ export default function AdminTimetablePage() {
           </DialogContent>
         </Dialog>
       </div>
-    </DashboardLayout>
   );
 }

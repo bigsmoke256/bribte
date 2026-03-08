@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { AnimatedCard, EmptyState } from "@/components/dashboard/DashboardParts";
 import {
   GraduationCap, Search, PlusCircle, Trash2, CheckCircle, XCircle,
@@ -193,7 +192,7 @@ export default function AdminEnrollmentPage() {
   if (!user) return null;
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6 max-w-[1400px] mx-auto">
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }}
@@ -493,6 +492,6 @@ export default function AdminEnrollmentPage() {
           )}
         </DialogContent>
       </Dialog>
-    </DashboardLayout>
+    </>
   );
 }

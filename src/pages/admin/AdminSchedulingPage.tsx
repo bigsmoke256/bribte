@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { AnimatedCard, EmptyState } from "@/components/dashboard/DashboardParts";
 import { Calendar, Clock, MapPin, Plus, Trash2, Edit2, Video, Users, PlayCircle, CheckCircle, XCircle, AlertTriangle, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -296,7 +295,6 @@ export default function AdminSchedulingPage() {
   }, {});
 
   return (
-    <DashboardLayout>
     <div className="space-y-6 max-w-[1400px] mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -605,6 +603,5 @@ export default function AdminSchedulingPage() {
         </DialogContent>
       </Dialog>
     </div>
-    </DashboardLayout>
   );
 }
