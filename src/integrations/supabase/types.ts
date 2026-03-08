@@ -575,6 +575,33 @@ export type Database = {
           },
         ]
       }
+      system_settings: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          id?: string
+          key: string
+          updated_at?: string
+          value?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
