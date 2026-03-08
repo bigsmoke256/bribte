@@ -1,15 +1,21 @@
+import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { AnimatedCard, SectionHeader } from "@/components/dashboard/DashboardParts";
-import { Upload, Download, ExternalLink } from "lucide-react";
+import { AnimatedCard } from "@/components/dashboard/DashboardParts";
+import { ExternalLink, Play, FileText, Image, Film, Music } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 
 export default function LecturerSubmissionsPage() {
   const { user } = useAuth();
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewType, setPreviewType] = useState<string>("");
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const { data: assignments = [] } = useQuery({
     queryKey: ["lecturer-assignments", user?.id],
@@ -62,6 +68,55 @@ export default function LecturerSubmissionsPage() {
     enabled: studentIds.length > 0,
   });
 
+  const getFileType = (filePath: string) => {
+    const ext = filePath.split('.').pop()?.toLowerCase() || '';
+    if (['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac'].includes(ext)) return 'audio';
+    if (['mp4', 'webm', 'mov', 'avi', 'mkv'].includes(ext)) return 'video';
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext)) return 'image';
+    if (['pdf'].includes(ext)) return 'pdf';
+    return 'document';
+  };
+
+  const getFileIcon = (type: string) => {
+    switch (type) {
+      case 'audio': return <Music className="w-4 h-4" />;
+      case 'video': return <Film className="w-4 h-4" />;
+      case 'image': return <Image className="w-4 h-4" />;
+      default: return <FileText className="w-4 h-4" />;
+    }
+  };
+
+  const handleViewFile = async (filePath: string) => {
+    if (!filePath) return;
+    
+    // Check if it's a full URL (legacy) or just a path
+    if (filePath.startsWith('http')) {
+      window.open(filePath, '_blank');
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.storage
+        .from("submissions")
+        .createSignedUrl(filePath, 3600); // 1 hour expiry
+
+      if (error) throw error;
+      
+      const fileType = getFileType(filePath);
+      
+      if (['audio', 'video', 'image', 'pdf'].includes(fileType)) {
+        setPreviewUrl(data.signedUrl);
+        setPreviewType(fileType);
+        setPreviewOpen(true);
+      } else {
+        // For documents (Word, Excel, etc.), download directly
+        window.open(data.signedUrl, '_blank');
+      }
+    } catch (err: any) {
+      toast.error("Failed to load file: " + err.message);
+    }
+  };
+
   return (
     <div className="space-y-6 max-w-[1400px] mx-auto">
       <div>
@@ -92,6 +147,8 @@ export default function LecturerSubmissionsPage() {
                   const student = studentProfiles.find(sp => sp.studentId === s.student_id);
                   const assignment = assignments.find(a => a.id === s.assignment_id);
                   const course = courses.find(c => c.id === assignment?.course_id);
+                  const fileType = s.file_url ? getFileType(s.file_url) : null;
+                  
                   return (
                     <motion.tr key={s.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
                       className="border-t hover:bg-muted/30 transition-colors">
@@ -112,9 +169,10 @@ export default function LecturerSubmissionsPage() {
                       </td>
                       <td className="px-4 py-3">
                         {s.file_url ? (
-                          <a href={s.file_url} target="_blank" rel="noopener noreferrer">
-                            <Button variant="ghost" size="icon" className="h-7 w-7"><ExternalLink className="w-3.5 h-3.5" /></Button>
-                          </a>
+                          <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-xs" onClick={() => handleViewFile(s.file_url!)}>
+                            {getFileIcon(fileType || 'document')}
+                            <span className="hidden sm:inline">View</span>
+                          </Button>
                         ) : <span className="text-xs text-muted-foreground">—</span>}
                       </td>
                     </motion.tr>
@@ -125,6 +183,41 @@ export default function LecturerSubmissionsPage() {
           </div>
         </AnimatedCard>
       )}
+
+      {/* Preview Dialog */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>File Preview</DialogTitle>
+          </DialogHeader>
+          <div className="mt-4">
+            {previewType === 'audio' && previewUrl && (
+              <audio controls className="w-full" src={previewUrl}>
+                Your browser does not support the audio element.
+              </audio>
+            )}
+            {previewType === 'video' && previewUrl && (
+              <video controls className="w-full max-h-[60vh]" src={previewUrl}>
+                Your browser does not support the video element.
+              </video>
+            )}
+            {previewType === 'image' && previewUrl && (
+              <img src={previewUrl} alt="Submission" className="max-w-full max-h-[60vh] mx-auto rounded-lg" />
+            )}
+            {previewType === 'pdf' && previewUrl && (
+              <iframe src={previewUrl} className="w-full h-[60vh] rounded-lg border" />
+            )}
+          </div>
+          {previewUrl && (
+            <div className="mt-4 flex justify-end">
+              <Button variant="outline" onClick={() => window.open(previewUrl, '_blank')}>
+                <ExternalLink className="w-4 h-4 mr-2" />
+                Open in New Tab
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
