@@ -9,6 +9,7 @@ import LecturerGradesPage from "./LecturerGradesPage";
 import LecturerTimetablePage from "./LecturerTimetablePage";
 import LecturerAnnouncementsPage from "./LecturerAnnouncementsPage";
 import ProfileSettingsPage from "../shared/ProfileSettingsPage";
+import HelpSupportPage from "../shared/HelpSupportPage";
 
 export default function LecturerDashboard() {
   const { user } = useAuth();
