@@ -74,7 +74,23 @@ export function ReceiptUploadDialog({ open, onOpenChange, studentId, courseId, o
         body: { receipt_id: receipt.id },
       });
 
-      if (fnErr) throw fnErr;
+      if (fnErr) {
+        // Function failed - check if receipt was still updated in DB
+        const { data: updatedReceipt } = await supabase
+          .from("receipt_uploads")
+          .select("status, review_notes")
+          .eq("id", receipt.id)
+          .single();
+        
+        if (updatedReceipt?.status === "rejected") {
+          setStatus("rejected");
+          setStatusMessage(updatedReceipt.review_notes || "Receipt was rejected.");
+          toast.error("Receipt rejected");
+          onComplete();
+          return;
+        }
+        throw new Error("Processing failed. Please try again.");
+      }
 
       // 5. Show result
       if (result.status === "verified") {
