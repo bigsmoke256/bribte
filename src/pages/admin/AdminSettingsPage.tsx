@@ -1,28 +1,201 @@
 import { useAuth } from "@/lib/auth-context";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { AnimatedCard, SectionHeader } from "@/components/dashboard/DashboardParts";
-import { Settings } from "lucide-react";
+import { Settings, Building2, GraduationCap, CreditCard, UserCheck, Save, Loader2, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
+import { useState, useEffect, useMemo } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
+
+interface SettingRow {
+  id: string;
+  key: string;
+  value: string;
+  category: string;
+}
 
 export default function AdminSettingsPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const [settings, setSettings] = useState<SettingRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState<Record<string, string>>({});
+
+  const fetchSettings = async () => {
+    setLoading(true);
+    const { data } = await supabase.from("system_settings").select("*").order("category");
+    if (data) setSettings(data as SettingRow[]);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchSettings(); }, []);
+
+  const getValue = (key: string) => dirty[key] ?? settings.find(s => s.key === key)?.value ?? "";
+
+  const setValue = (key: string, value: string) => {
+    setDirty(prev => ({ ...prev, [key]: value }));
+  };
+
+  const hasPendingChanges = Object.keys(dirty).length > 0;
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      for (const [key, value] of Object.entries(dirty)) {
+        await supabase.from("system_settings").update({ value, updated_at: new Date().toISOString() }).eq("key", key);
+      }
+      setDirty({});
+      await fetchSettings();
+      toast({ title: "Settings saved", description: "All changes have been applied successfully." });
+    } catch {
+      toast({ title: "Error", description: "Failed to save settings.", variant: "destructive" });
+    }
+    setSaving(false);
+  };
+
   if (!user) return null;
+
+  const Field = ({ label, settingKey, placeholder, type = "text" }: { label: string; settingKey: string; placeholder?: string; type?: string }) => (
+    <div className="space-y-1.5">
+      <Label className="text-xs font-medium text-muted-foreground">{label}</Label>
+      <Input
+        type={type}
+        value={getValue(settingKey)}
+        onChange={e => setValue(settingKey, e.target.value)}
+        placeholder={placeholder}
+        className="h-10"
+      />
+    </div>
+  );
+
+  const ToggleField = ({ label, description, settingKey }: { label: string; description: string; settingKey: string }) => (
+    <div className="flex items-center justify-between py-3 border-b last:border-0">
+      <div>
+        <p className="text-sm font-medium">{label}</p>
+        <p className="text-xs text-muted-foreground">{description}</p>
+      </div>
+      <Switch
+        checked={getValue(settingKey) === "true"}
+        onCheckedChange={checked => setValue(settingKey, checked ? "true" : "false")}
+      />
+    </div>
+  );
 
   return (
     <DashboardLayout>
       <div className="space-y-6 max-w-[1400px] mx-auto">
-        <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="font-display text-2xl lg:text-3xl font-extrabold tracking-tight">Settings</h1>
-          <p className="text-sm text-muted-foreground mt-1">System configuration</p>
+        <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
+          <div>
+            <h1 className="font-display text-2xl lg:text-3xl font-extrabold tracking-tight">Settings</h1>
+            <p className="text-sm text-muted-foreground mt-1">System configuration & preferences</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={fetchSettings} disabled={loading}>
+              <RefreshCw className={`w-4 h-4 mr-1.5 ${loading ? "animate-spin" : ""}`} /> Refresh
+            </Button>
+            <Button size="sm" onClick={handleSave} disabled={!hasPendingChanges || saving}>
+              {saving ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <Save className="w-4 h-4 mr-1.5" />}
+              Save Changes
+            </Button>
+          </div>
         </motion.div>
 
-        <AnimatedCard>
-          <SectionHeader title="System Settings" icon={Settings} />
-          <div className="py-8 text-center">
-            <p className="text-muted-foreground text-sm">System settings and configuration options will appear here.</p>
-            <p className="text-xs text-muted-foreground mt-2">Academic year, semester dates, fee structures, and more.</p>
+        {loading ? (
+          <div className="py-20 flex items-center justify-center">
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
           </div>
-        </AnimatedCard>
+        ) : (
+          <Tabs defaultValue="general" className="space-y-4">
+            <TabsList className="bg-muted/60">
+              <TabsTrigger value="general" className="gap-1.5"><Building2 className="w-3.5 h-3.5" /> Institution</TabsTrigger>
+              <TabsTrigger value="academic" className="gap-1.5"><GraduationCap className="w-3.5 h-3.5" /> Academic</TabsTrigger>
+              <TabsTrigger value="fees" className="gap-1.5"><CreditCard className="w-3.5 h-3.5" /> Fees</TabsTrigger>
+              <TabsTrigger value="enrollment" className="gap-1.5"><UserCheck className="w-3.5 h-3.5" /> Enrollment</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="general">
+              <AnimatedCard>
+                <SectionHeader title="Institution Details" icon={Building2} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Field label="Institution Name" settingKey="institution_name" placeholder="e.g. BRIBTE" />
+                  <Field label="Email Address" settingKey="institution_email" type="email" placeholder="info@example.com" />
+                  <Field label="Phone Number" settingKey="institution_phone" placeholder="+254..." />
+                  <Field label="Address" settingKey="institution_address" placeholder="City, Country" />
+                </div>
+              </AnimatedCard>
+            </TabsContent>
+
+            <TabsContent value="academic">
+              <AnimatedCard>
+                <SectionHeader title="Academic Calendar" icon={GraduationCap} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Field label="Current Academic Year" settingKey="current_academic_year" placeholder="2025/2026" />
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-muted-foreground">Current Semester</Label>
+                    <Select value={getValue("current_semester")} onValueChange={v => setValue("current_semester", v)}>
+                      <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">Semester 1</SelectItem>
+                        <SelectItem value="2">Semester 2</SelectItem>
+                        <SelectItem value="3">Semester 3 (Summer)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Field label="Semester Start Date" settingKey="semester_start_date" type="date" />
+                  <Field label="Semester End Date" settingKey="semester_end_date" type="date" />
+                </div>
+              </AnimatedCard>
+            </TabsContent>
+
+            <TabsContent value="fees">
+              <AnimatedCard>
+                <SectionHeader title="Fee Configuration" icon={CreditCard} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-muted-foreground">Currency</Label>
+                    <Select value={getValue("currency")} onValueChange={v => setValue("currency", v)}>
+                      <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="KES">KES - Kenyan Shilling</SelectItem>
+                        <SelectItem value="USD">USD - US Dollar</SelectItem>
+                        <SelectItem value="GBP">GBP - British Pound</SelectItem>
+                        <SelectItem value="EUR">EUR - Euro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Field label="Payment Deadline (days after enrollment)" settingKey="payment_deadline_days" type="number" />
+                  <Field label="Late Fee Penalty (%)" settingKey="late_fee_penalty" type="number" />
+                </div>
+              </AnimatedCard>
+            </TabsContent>
+
+            <TabsContent value="enrollment">
+              <AnimatedCard>
+                <SectionHeader title="Enrollment Rules" icon={UserCheck} />
+                <div className="space-y-1 mb-4">
+                  <Field label="Max Courses Per Student" settingKey="max_enrollment_per_student" type="number" />
+                </div>
+                <ToggleField
+                  label="Allow Late Enrollment"
+                  description="Students can enroll after the semester start date"
+                  settingKey="allow_late_enrollment"
+                />
+                <ToggleField
+                  label="Auto-Approve Enrollments"
+                  description="Enrollments are approved instantly without admin review"
+                  settingKey="auto_approve_enrollment"
+                />
+              </AnimatedCard>
+            </TabsContent>
+          </Tabs>
+        )}
       </div>
     </DashboardLayout>
   );
