@@ -8,6 +8,7 @@ import StudentResultsPage from "./StudentResultsPage";
 import StudentTimetablePage from "./StudentTimetablePage";
 import StudentSchedulePage from "./StudentSchedulePage";
 import StudentAnnouncementsPage from "./StudentAnnouncementsPage";
+import StudentExamCardPage from "./StudentExamCardPage";
 import ProfileSettingsPage from "../shared/ProfileSettingsPage";
 
 export default function StudentDashboard() {
@@ -22,6 +23,7 @@ export default function StudentDashboard() {
         <Route path="timetable" element={<StudentTimetablePage />} />
         <Route path="schedule" element={<StudentSchedulePage />} />
         <Route path="announcements" element={<StudentAnnouncementsPage />} />
+        <Route path="exam-card" element={<StudentExamCardPage />} />
         <Route path="profile" element={<ProfileSettingsPage />} />
       </Routes>
     </DashboardLayout>
