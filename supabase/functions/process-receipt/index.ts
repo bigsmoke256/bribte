@@ -34,6 +34,37 @@ function jsonResponse(data: any, status = 200) {
   });
 }
 
+async function notifyAdminsOfRejection(
+  supabase: any,
+  studentName: string,
+  regNumber: string | null,
+  reason: string,
+  details: string,
+  receiptId: string,
+) {
+  try {
+    // Get an admin user_id to use as author
+    const { data: adminRole } = await supabase
+      .from("user_roles")
+      .select("user_id")
+      .eq("role", "admin")
+      .limit(1)
+      .single();
+    
+    if (!adminRole) return;
+
+    await supabase.from("announcements").insert({
+      author_id: adminRole.user_id,
+      title: `⚠️ Receipt Rejected: ${studentName || "Unknown Student"}`,
+      message: `A receipt from ${studentName || "Unknown"} (${regNumber || "No Reg#"}) was automatically rejected.\n\nReason: ${reason}\nDetails: ${details}\n\nReceipt ID: ${receiptId}`,
+      priority: "urgent",
+      target_group: "admin",
+    });
+  } catch (e) {
+    console.error("Failed to notify admins:", e);
+  }
+}
+
 function normalizeString(s: string | null | undefined): string {
   return (s || "").toLowerCase().replace(/[^a-z0-9\s]/g, "").trim();
 }
@@ -73,6 +104,27 @@ Deno.serve(async (req) => {
     const student = Array.isArray(receipt.student) ? receipt.student[0] : receipt.student;
     const validationFlags: Record<string, any> = {};
 
+    // Fetch student profile name early for notifications
+    const { data: studentProfile } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("user_id", student.user_id)
+      .single();
+    const studentName = studentProfile?.full_name || "Unknown Student";
+    const regNumber = student.registration_number;
+
+    // Helper: reject with admin notification
+    const rejectWithAlert = async (reason: string, reviewNotes: string, responseExtra: Record<string, any> = {}) => {
+      await supabase.from("receipt_uploads").update({
+        status: "rejected",
+        review_notes: reviewNotes,
+      }).eq("id", receipt_id);
+      await supabase.from("receipt_extractions").update({ validation_flags: validationFlags })
+        .eq("receipt_id", receipt_id);
+      await notifyAdminsOfRejection(supabase, studentName, regNumber, reason, reviewNotes, receipt_id);
+      return jsonResponse({ status: "rejected", reason, details: reviewNotes, ...responseExtra });
+    };
+
     // 2. File hash duplicate check
     if (receipt.file_hash) {
       const { data: dup } = await supabase
@@ -83,11 +135,7 @@ Deno.serve(async (req) => {
         .neq("status", "rejected")
         .limit(1);
       if (dup && dup.length > 0) {
-        await supabase.from("receipt_uploads").update({
-          status: "rejected",
-          review_notes: "Duplicate file detected (same file already uploaded)",
-        }).eq("id", receipt_id);
-        return jsonResponse({ status: "rejected", reason: "duplicate_file" });
+        return await rejectWithAlert("duplicate_file", "Duplicate file detected (same file already uploaded)");
       }
     }
 
@@ -237,13 +285,8 @@ Return ONLY the JSON, no markdown, no explanation.`,
       const indicators = (extracted.fraud_indicators || []).join("; ");
       validationFlags.fraud_detected = true;
       validationFlags.fraud_indicators = extracted.fraud_indicators;
-      await supabase.from("receipt_uploads").update({
-        status: "rejected",
-        review_notes: `Receipt rejected: AI detected this is NOT a genuine SchoolPay receipt. Indicators: ${indicators || "Document does not match expected receipt format."}`,
-      }).eq("id", receipt_id);
-      await supabase.from("receipt_extractions").update({ validation_flags: validationFlags })
-        .eq("receipt_id", receipt_id);
-      return jsonResponse({ status: "rejected", reason: "fake_receipt", indicators: extracted.fraud_indicators });
+      const notes = `Receipt rejected: AI detected this is NOT a genuine SchoolPay receipt. Indicators: ${indicators || "Document does not match expected receipt format."}`;
+      return await rejectWithAlert("fake_receipt", notes, { indicators: extracted.fraud_indicators });
     }
 
     // CHECK 1: Structure validation - mandatory fields
@@ -257,13 +300,8 @@ Return ONLY the JSON, no markdown, no explanation.`,
 
     if (missingFields.length > 0) {
       validationFlags.missing_fields = missingFields;
-      await supabase.from("receipt_uploads").update({
-        status: "rejected",
-        review_notes: `Receipt rejected: missing mandatory fields: ${missingFields.join(", ")}. This may indicate a fake or incomplete receipt.`,
-      }).eq("id", receipt_id);
-      await supabase.from("receipt_extractions").update({ validation_flags: validationFlags })
-        .eq("receipt_id", receipt_id);
-      return jsonResponse({ status: "rejected", reason: "missing_fields", missing: missingFields });
+      const notes = `Receipt rejected: missing mandatory fields: ${missingFields.join(", ")}. This may indicate a fake or incomplete receipt.`;
+      return await rejectWithAlert("missing_fields", notes, { missing: missingFields });
     }
 
     // CHECK 2: Institution name must match BRIBTE
@@ -273,13 +311,8 @@ Return ONLY the JSON, no markdown, no explanation.`,
     validationFlags.institution_valid = isValidInstitution;
 
     if (!isValidInstitution) {
-      await supabase.from("receipt_uploads").update({
-        status: "rejected",
-        review_notes: `Receipt rejected: Institution "${extracted.institution_name}" does not match BUGANDA ROYAL INSTITUTE / BRIBTE. This receipt is not for this institution.`,
-      }).eq("id", receipt_id);
-      await supabase.from("receipt_extractions").update({ validation_flags: validationFlags })
-        .eq("receipt_id", receipt_id);
-      return jsonResponse({ status: "rejected", reason: "wrong_institution" });
+      const notes = `Receipt rejected: Institution "${extracted.institution_name}" does not match BUGANDA ROYAL INSTITUTE / BRIBTE.`;
+      return await rejectWithAlert("wrong_institution", notes);
     }
 
     // CHECK 3: OCR confidence
@@ -304,13 +337,8 @@ Return ONLY the JSON, no markdown, no explanation.`,
         .limit(1);
       if (dupTx && dupTx.length > 0) {
         validationFlags.duplicate_transaction = extracted.payment_code;
-        await supabase.from("receipt_uploads").update({
-          status: "rejected",
-          review_notes: `Duplicate transaction code: ${extracted.payment_code}. This receipt has already been processed.`,
-        }).eq("id", receipt_id);
-        await supabase.from("receipt_extractions").update({ validation_flags: validationFlags })
-          .eq("receipt_id", receipt_id);
-        return jsonResponse({ status: "rejected", reason: "duplicate_transaction" });
+        const notes = `Duplicate transaction code: ${extracted.payment_code}. This receipt has already been processed.`;
+        return await rejectWithAlert("duplicate_transaction", notes);
       }
     }
 
@@ -331,14 +359,9 @@ Return ONLY the JSON, no markdown, no explanation.`,
       return jsonResponse({ status: "review_required", reason: "unknown_provider" });
     }
 
-    // CHECK 6: Student name matching
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("full_name")
-      .eq("user_id", student.user_id)
-      .single();
-
-    const studentDbName = profile?.full_name || "";
+    // CHECK 6: Student name matching (reuse studentProfile fetched earlier)
+    const studentDbName = studentName;
+    const receiptStudentName = extracted.student_name || "";
     const receiptStudentName = extracted.student_name || "";
     const similarity = nameSimilarity(studentDbName, receiptStudentName);
     validationFlags.name_similarity = similarity;
@@ -346,13 +369,8 @@ Return ONLY the JSON, no markdown, no explanation.`,
     validationFlags.receipt_name = receiptStudentName;
 
     if (similarity < 0.3) {
-      await supabase.from("receipt_uploads").update({
-        status: "rejected",
-        review_notes: `Student name mismatch. Receipt: "${receiptStudentName}", Database: "${studentDbName}". Names do not match.`,
-      }).eq("id", receipt_id);
-      await supabase.from("receipt_extractions").update({ validation_flags: validationFlags })
-        .eq("receipt_id", receipt_id);
-      return jsonResponse({ status: "rejected", reason: "name_mismatch" });
+      const notes = `Student name mismatch. Receipt: "${receiptStudentName}", Database: "${studentDbName}". Names do not match.`;
+      return await rejectWithAlert("name_mismatch", notes);
     }
 
     if (similarity < 0.7) {
@@ -494,7 +512,7 @@ Return ONLY the JSON, no markdown, no explanation.`,
       extracted: { amount, transaction_id: extracted.payment_code },
       new_balance: updatedStudent?.fee_balance ?? null,
     });
-  } catch (error: unknown) {
+  } catch (error) {
     console.error("process-receipt error:", error);
     const msg = error instanceof Error ? error.message : "Unknown error";
     return new Response(JSON.stringify({ error: msg }), {
