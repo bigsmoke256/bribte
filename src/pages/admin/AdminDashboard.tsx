@@ -1,5 +1,6 @@
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { Routes, Route } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
-import { useLocation } from "react-router-dom";
 import AdminDashboardHome from "./AdminDashboardHome";
 import AdminStudentsPage from "./AdminStudentsPage";
 import AdminLecturersPage from "./AdminLecturersPage";
@@ -24,31 +25,33 @@ import ProfileSettingsPage from "../shared/ProfileSettingsPage";
 
 export default function AdminDashboard() {
   const { user } = useAuth();
-  const location = useLocation();
   if (!user) return null;
 
-  const path = location.pathname;
-
-  if (path === "/admin/students") return <AdminStudentsPage />;
-  if (path === "/admin/lecturers") return <AdminLecturersPage />;
-  if (path === "/admin/courses") return <AdminCoursesPage />;
-  if (path === "/admin/fees") return <AdminFeesPage />;
-  if (path === "/admin/receipts") return <AdminReceiptReviewPage />;
-  if (path === "/admin/enrollment") return <AdminEnrollmentPage />;
-  if (path === "/admin/timetable") return <AdminTimetablePage />;
-  if (path === "/admin/scheduling") return <AdminSchedulingPage />;
-  if (path === "/admin/attendance") return <AdminAttendancePage />;
-  if (path === "/admin/announcements") return <AdminAnnouncementsPage />;
-  if (path === "/admin/reports") return <AdminReportsPage />;
-  if (path === "/admin/records") return <AdminRecordsPage />;
-  if (path === "/admin/exams") return <AdminExamsPage />;
-  if (path === "/admin/clearance") return <AdminClearancePage />;
-  if (path === "/admin/calendar") return <AdminAcademicCalendarPage />;
-  if (path === "/admin/documents") return <AdminDocumentsPage />;
-  if (path === "/admin/alumni") return <AdminAlumniPage />;
-  if (path === "/admin/audit-logs") return <AdminAuditLogPage />;
-  if (path === "/admin/settings") return <AdminSettingsPage />;
-  if (path === "/admin/profile") return <ProfileSettingsPage />;
-
-  return <AdminDashboardHome />;
+  return (
+    <DashboardLayout>
+      <Routes>
+        <Route index element={<AdminDashboardHome />} />
+        <Route path="students" element={<AdminStudentsPage />} />
+        <Route path="lecturers" element={<AdminLecturersPage />} />
+        <Route path="courses" element={<AdminCoursesPage />} />
+        <Route path="exams" element={<AdminExamsPage />} />
+        <Route path="fees" element={<AdminFeesPage />} />
+        <Route path="receipts" element={<AdminReceiptReviewPage />} />
+        <Route path="enrollment" element={<AdminEnrollmentPage />} />
+        <Route path="clearance" element={<AdminClearancePage />} />
+        <Route path="timetable" element={<AdminTimetablePage />} />
+        <Route path="scheduling" element={<AdminSchedulingPage />} />
+        <Route path="attendance" element={<AdminAttendancePage />} />
+        <Route path="calendar" element={<AdminAcademicCalendarPage />} />
+        <Route path="documents" element={<AdminDocumentsPage />} />
+        <Route path="announcements" element={<AdminAnnouncementsPage />} />
+        <Route path="reports" element={<AdminReportsPage />} />
+        <Route path="records" element={<AdminRecordsPage />} />
+        <Route path="alumni" element={<AdminAlumniPage />} />
+        <Route path="audit-logs" element={<AdminAuditLogPage />} />
+        <Route path="settings" element={<AdminSettingsPage />} />
+        <Route path="profile" element={<ProfileSettingsPage />} />
+      </Routes>
+    </DashboardLayout>
+  );
 }
