@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AnimatedCard, SectionHeader, EmptyState } from "@/components/dashboard/DashboardParts";
 import { BookOpen, Clock, Users, GraduationCap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { FileText, Download, ExternalLink } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { motion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
