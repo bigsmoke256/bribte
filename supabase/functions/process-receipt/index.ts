@@ -135,11 +135,7 @@ Deno.serve(async (req) => {
         .neq("status", "rejected")
         .limit(1);
       if (dup && dup.length > 0) {
-        await supabase.from("receipt_uploads").update({
-          status: "rejected",
-          review_notes: "Duplicate file detected (same file already uploaded)",
-        }).eq("id", receipt_id);
-        return jsonResponse({ status: "rejected", reason: "duplicate_file" });
+        return await rejectWithAlert("duplicate_file", "Duplicate file detected (same file already uploaded)");
       }
     }
 
