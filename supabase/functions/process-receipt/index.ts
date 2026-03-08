@@ -359,14 +359,9 @@ Return ONLY the JSON, no markdown, no explanation.`,
       return jsonResponse({ status: "review_required", reason: "unknown_provider" });
     }
 
-    // CHECK 6: Student name matching
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("full_name")
-      .eq("user_id", student.user_id)
-      .single();
-
-    const studentDbName = profile?.full_name || "";
+    // CHECK 6: Student name matching (reuse studentProfile fetched earlier)
+    const studentDbName = studentName;
+    const receiptStudentName = extracted.student_name || "";
     const receiptStudentName = extracted.student_name || "";
     const similarity = nameSimilarity(studentDbName, receiptStudentName);
     validationFlags.name_similarity = similarity;
