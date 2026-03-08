@@ -192,19 +192,7 @@ export default function StudentDashboardHome() {
         </AnimatedCard>
       </div>
 
-      <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Upload Payment Receipt</DialogTitle><DialogDescription>Upload your payment receipt for verification.</DialogDescription></DialogHeader>
-          <div className="space-y-4 py-2">
-            <div><Label>Amount Paid (UGX)</Label><Input type="number" placeholder="e.g. 500000" value={uploadAmount} onChange={e => setUploadAmount(e.target.value)} /></div>
-            <div><Label>Receipt File</Label><Input type="file" accept="image/*,.pdf" onChange={e => setUploadFile(e.target.files?.[0] || null)} /></div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setUploadOpen(false)}>Cancel</Button>
-            <Button onClick={handleUploadReceipt} disabled={uploading || !uploadFile || !uploadAmount}>{uploading ? "Uploading..." : "Submit Receipt"}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ReceiptUploadDialog open={uploadOpen} onOpenChange={setUploadOpen} studentId={student.id} courseId={student.course_id} onComplete={loadData} />
     </div>
   );
 }
