@@ -595,5 +595,6 @@ export default function AdminCoursesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </>
   );
 }

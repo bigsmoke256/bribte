@@ -387,5 +387,6 @@ export default function AdminAnnouncementsPage() {
           })()}
         </DialogContent>
       </Dialog>
+    </>
   );
 }
