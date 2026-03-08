@@ -104,15 +104,21 @@ export function ReceiptUploadDialog({ open, onOpenChange, studentId, courseId, o
         toast.info("Receipt submitted for admin review");
       } else if (result.status === "rejected") {
         setStatus("rejected");
+        // Show the detailed reason from the backend
+        const detail = result.details || "";
         const reasonMap: Record<string, string> = {
           duplicate_file: "This exact receipt file has already been uploaded.",
           duplicate_transaction: "This transaction code has already been processed.",
           missing_fields: `Receipt is missing required fields${result.missing ? ": " + result.missing.join(", ") : ""}. Please upload a valid SchoolPay receipt.`,
           name_mismatch: "The student name on the receipt does not match your records.",
-          fake_receipt: `This does not appear to be a genuine SchoolPay receipt.${result.indicators?.length ? " Issues: " + result.indicators.join(", ") : ""} Please upload an authentic receipt.`,
-          wrong_institution: "The institution on the receipt does not match Buganda Royal Institute / BRIBTE. Please upload a receipt for this institution.",
+          fake_receipt: `This does not appear to be a genuine SchoolPay receipt.${result.indicators?.length ? "\n\nIssues detected:\n• " + result.indicators.join("\n• ") : ""}`,
+          wrong_institution: "The institution on the receipt does not match Buganda Royal Institute / BRIBTE.",
         };
-        setStatusMessage(reasonMap[result.reason] || "Receipt was rejected. Please upload a valid SchoolPay payment receipt.");
+        const friendlyReason = reasonMap[result.reason] || "Receipt was rejected.";
+        const fullMessage = detail
+          ? `${friendlyReason}\n\nSystem details: ${detail}`
+          : friendlyReason;
+        setStatusMessage(fullMessage + "\n\nAdministrators have been automatically notified.");
         toast.error("Receipt rejected");
       }
 
