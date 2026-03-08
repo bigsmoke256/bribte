@@ -323,10 +323,10 @@ export default function AdminTimetablePage() {
 
               <div className="space-y-2">
                 <Label>Lecturer (optional)</Label>
-                <Select value={form.lecturer_id} onValueChange={v => setForm({ ...form, lecturer_id: v })}>
+                <Select value={form.lecturer_id || "none"} onValueChange={v => setForm({ ...form, lecturer_id: v === "none" ? "" : v })}>
                   <SelectTrigger><SelectValue placeholder="Select lecturer" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No specific lecturer</SelectItem>
+                    <SelectItem value="none">No specific lecturer</SelectItem>
                     {lecturers.map((l: any) => (
                       <SelectItem key={l.id} value={l.id}>{l.full_name}</SelectItem>
                     ))}
