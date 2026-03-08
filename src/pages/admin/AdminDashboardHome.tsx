@@ -1,5 +1,4 @@
 import { useAuth } from "@/lib/auth-context";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { AnimatedCard, SectionHeader, EmptyState } from "@/components/dashboard/DashboardParts";
 import {
@@ -97,7 +96,6 @@ export default function AdminDashboardHome() {
   ];
 
   return (
-    <DashboardLayout>
       <div className="space-y-6 max-w-[1400px] mx-auto">
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
@@ -245,6 +243,5 @@ export default function AdminDashboardHome() {
           </div>
         </AnimatedCard>
       </div>
-    </DashboardLayout>
   );
 }
