@@ -513,7 +513,7 @@ Return ONLY the JSON, no markdown, no explanation.`,
       extracted: { amount, transaction_id: extracted.payment_code },
       new_balance: updatedStudent?.fee_balance ?? null,
     });
-  } catch (error: unknown) {
+  } catch (error) {
     console.error("process-receipt error:", error);
     const msg = error instanceof Error ? error.message : "Unknown error";
     return new Response(JSON.stringify({ error: msg }), {
