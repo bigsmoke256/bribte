@@ -258,7 +258,11 @@ export default function AdminCoursesPage() {
     const matchesSearch = !q || c.course_code.toLowerCase().includes(q) || c.course_name.toLowerCase().includes(q);
     const matchesLevel = levelFilter === "all" || c.program_level === levelFilter;
     const matchesPub = pubFilter === "all" || (pubFilter === "published" ? c.is_published : !c.is_published);
-    return matchesSearch && matchesLevel && matchesPub;
+    const matchesMode = modeFilter === "all"
+      || (modeFilter === "day" && (c.tuition_day || 0) > 0)
+      || (modeFilter === "evening" && (c.tuition_evening || 0) > 0)
+      || (modeFilter === "weekend" && (c.tuition_weekend || 0) > 0);
+    return matchesSearch && matchesLevel && matchesPub && matchesMode;
   });
 
   const toggleExpand = (id: string) => {
