@@ -42,8 +42,11 @@ interface StudentBalance {
   fee_balance: number;
   user_id: string;
   course_id: string | null;
+  study_mode: string;
   profile?: { full_name: string; email: string };
-  course?: { course_name: string; tuition_day: number | null } | null;
+  course?: { course_name: string; course_code: string; tuition_day: number | null; tuition_evening: number | null; tuition_weekend: number | null } | null;
+  totalPaid?: number;
+  tuition?: number;
 }
 
 const CHART_COLORS = [
