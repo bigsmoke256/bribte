@@ -589,6 +589,5 @@ export default function AdminReportsPage() {
           )}
         </Tabs>
       </div>
-    </DashboardLayout>
   );
 }

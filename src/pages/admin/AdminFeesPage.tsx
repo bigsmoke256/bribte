@@ -639,6 +639,5 @@ export default function AdminFeesPage() {
           )}
         </DialogContent>
       </Dialog>
-    </DashboardLayout>
   );
 }

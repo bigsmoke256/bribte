@@ -491,6 +491,5 @@ export default function AdminEnrollmentPage() {
           )}
         </DialogContent>
       </Dialog>
-    </DashboardLayout>
   );
 }

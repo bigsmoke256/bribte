@@ -549,6 +549,5 @@ export default function AdminStudentsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </DashboardLayout>
   );
 }

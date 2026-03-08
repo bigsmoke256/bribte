@@ -595,6 +595,5 @@ export default function AdminLecturersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </DashboardLayout>
   );
 }
