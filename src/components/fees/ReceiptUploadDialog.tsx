@@ -123,9 +123,9 @@ export function ReceiptUploadDialog({ open, onOpenChange, studentId, courseId, o
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Upload Receipt (AI Verified)</DialogTitle>
+          <DialogTitle>Upload Payment Receipt</DialogTitle>
           <DialogDescription>
-            Upload your receipt and our AI will instantly verify and apply your payment.
+            Upload your payment receipt and it will be automatically verified and applied.
           </DialogDescription>
         </DialogHeader>
 
