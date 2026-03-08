@@ -123,9 +123,9 @@ export function ReceiptUploadDialog({ open, onOpenChange, studentId, courseId, o
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Upload Receipt (AI Verified)</DialogTitle>
+          <DialogTitle>Upload Payment Receipt</DialogTitle>
           <DialogDescription>
-            Upload your receipt and our AI will instantly verify and apply your payment.
+            Upload your payment receipt and it will be automatically verified and applied.
           </DialogDescription>
         </DialogHeader>
 
@@ -139,7 +139,7 @@ export function ReceiptUploadDialog({ open, onOpenChange, studentId, courseId, o
                   onChange={e => setFile(e.target.files?.[0] || null)} className="mt-1" />
               </div>
               <p className="text-xs text-muted-foreground">
-                Our AI will automatically extract the payment amount, transaction ID, and other details from your receipt.
+                The system will automatically extract the payment amount, transaction ID, and other details from your receipt.
               </p>
             </motion.div>
           ) : (
