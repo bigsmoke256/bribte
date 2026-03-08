@@ -39,9 +39,15 @@ export default function AdminDashboardHome() {
       });
 
       if (p.data) {
+        const userIds = p.data.map((x: any) => {
+          const student = Array.isArray(x.student) ? x.student[0] : x.student;
+          return student?.user_id;
+        }).filter(Boolean);
+        const { data: profs } = await supabase.from("profiles").select("user_id, full_name").in("user_id", userIds);
+        const pm = new Map((profs || []).map(pr => [pr.user_id, pr]));
         setRecentPayments(p.data.map((x: any) => {
           const student = Array.isArray(x.student) ? x.student[0] : x.student;
-          if (student) student.profile = Array.isArray(student.profile) ? student.profile[0] : student.profile;
+          if (student) student.profile = pm.get(student.user_id) || null;
           return { ...x, student };
         }));
       }
