@@ -32,6 +32,7 @@ const studentNav: NavItem[] = [
   { label: "Schedule", icon: Video, path: "/student/schedule" },
   { label: "Announcements", icon: Bell, path: "/student/announcements" },
   { label: "Exam Card", icon: GraduationCap, path: "/student/exam-card" },
+  { label: "Clearance", icon: ShieldCheck, path: "/student/clearance" },
 ];
 
 const lecturerNav: NavItem[] = [
