@@ -136,7 +136,7 @@ export default function StudentDashboardHome() {
               <div className="p-3 rounded-xl bg-success-light"><p className="text-[10px] text-success font-semibold uppercase tracking-wider">Paid</p><p className="font-display font-bold text-success text-sm mt-0.5">UGX {feeStats.totalPaid.toLocaleString()}</p></div>
               <div className="p-3 rounded-xl bg-destructive/5"><p className="text-[10px] text-destructive font-semibold uppercase tracking-wider">Balance</p><p className="font-display font-bold text-destructive text-sm mt-0.5">UGX {feeStats.balance.toLocaleString()}</p></div>
             </div>
-            <Button variant="outline" size="sm" className="w-full rounded-xl" onClick={() => setUploadOpen(true)}><Upload className="w-3.5 h-3.5 mr-2" /> Upload Payment Receipt</Button>
+            <Button variant="outline" size="sm" className="w-full rounded-xl" onClick={() => setUploadOpen(true)}><Upload className="w-3.5 h-3.5 mr-2" /> Upload Receipt (AI Verified)</Button>
             {payments.length > 0 && (
               <div className="space-y-2 pt-2 border-t">
                 <p className="text-xs font-semibold text-muted-foreground">Recent Payments</p>
