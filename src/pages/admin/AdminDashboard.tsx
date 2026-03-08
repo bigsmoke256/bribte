@@ -14,6 +14,12 @@ import AdminReportsPage from "./AdminReportsPage";
 import AdminSettingsPage from "./AdminSettingsPage";
 import AdminReceiptReviewPage from "./AdminReceiptReviewPage";
 import AdminRecordsPage from "./AdminRecordsPage";
+import AdminExamsPage from "./AdminExamsPage";
+import AdminClearancePage from "./AdminClearancePage";
+import AdminAcademicCalendarPage from "./AdminAcademicCalendarPage";
+import AdminDocumentsPage from "./AdminDocumentsPage";
+import AdminAlumniPage from "./AdminAlumniPage";
+import AdminAuditLogPage from "./AdminAuditLogPage";
 import ProfileSettingsPage from "../shared/ProfileSettingsPage";
 
 export default function AdminDashboard() {
@@ -35,6 +41,12 @@ export default function AdminDashboard() {
   if (path === "/admin/announcements") return <AdminAnnouncementsPage />;
   if (path === "/admin/reports") return <AdminReportsPage />;
   if (path === "/admin/records") return <AdminRecordsPage />;
+  if (path === "/admin/exams") return <AdminExamsPage />;
+  if (path === "/admin/clearance") return <AdminClearancePage />;
+  if (path === "/admin/calendar") return <AdminAcademicCalendarPage />;
+  if (path === "/admin/documents") return <AdminDocumentsPage />;
+  if (path === "/admin/alumni") return <AdminAlumniPage />;
+  if (path === "/admin/audit-logs") return <AdminAuditLogPage />;
   if (path === "/admin/settings") return <AdminSettingsPage />;
   if (path === "/admin/profile") return <ProfileSettingsPage />;
 

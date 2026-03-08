@@ -4,7 +4,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, BookOpen, FileText, CreditCard, Calendar, Bell, Users,
   BarChart3, Settings, LogOut, Menu, GraduationCap, Upload, ClipboardList,
-  CheckCircle, MessageSquare, ChevronDown, Search, PanelLeftClose, PanelLeft, UserCog, Video, ClipboardCheck, Archive
+  CheckCircle, MessageSquare, ChevronDown, Search, PanelLeftClose, PanelLeft, UserCog, Video, ClipboardCheck, Archive,
+  PenTool, ShieldCheck, CalendarDays, Printer, UserCheck, Activity
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,7 @@ const studentNav: NavItem[] = [
   { label: "Schedule", icon: Video, path: "/student/schedule" },
   { label: "Announcements", icon: Bell, path: "/student/announcements" },
   { label: "Exam Card", icon: GraduationCap, path: "/student/exam-card" },
+  { label: "Clearance", icon: ShieldCheck, path: "/student/clearance" },
 ];
 
 const lecturerNav: NavItem[] = [
@@ -48,15 +50,21 @@ const adminNav: NavItem[] = [
   { label: "Students", icon: Users, path: "/admin/students" },
   { label: "Lecturers", icon: UserCog, path: "/admin/lecturers" },
   { label: "Courses", icon: BookOpen, path: "/admin/courses" },
+  { label: "Exams & Results", icon: PenTool, path: "/admin/exams" },
   { label: "Fee Management", icon: CreditCard, path: "/admin/fees" },
   { label: "Receipt Review", icon: FileText, path: "/admin/receipts" },
   { label: "Enrollment", icon: GraduationCap, path: "/admin/enrollment" },
+  { label: "Clearance", icon: ShieldCheck, path: "/admin/clearance" },
   { label: "Timetable", icon: Calendar, path: "/admin/timetable" },
   { label: "Scheduling", icon: Video, path: "/admin/scheduling" },
   { label: "Attendance", icon: ClipboardCheck, path: "/admin/attendance" },
+  { label: "Academic Calendar", icon: CalendarDays, path: "/admin/calendar" },
+  { label: "Documents", icon: Printer, path: "/admin/documents" },
   { label: "Announcements", icon: Bell, path: "/admin/announcements" },
   { label: "Reports", icon: BarChart3, path: "/admin/reports" },
   { label: "Student Records", icon: Archive, path: "/admin/records" },
+  { label: "Alumni", icon: UserCheck, path: "/admin/alumni" },
+  { label: "Audit Logs", icon: Activity, path: "/admin/audit-logs" },
   { label: "Settings", icon: Settings, path: "/admin/settings" },
 ];
 
