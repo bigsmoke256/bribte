@@ -3,8 +3,8 @@ import { useAuth } from "@/lib/auth-context";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, BookOpen, FileText, CreditCard, Calendar, Bell, Users,
-  BarChart3, Settings, LogOut, Menu, X, GraduationCap, Upload, ClipboardList,
-  CheckCircle, MessageSquare, ChevronDown, Search, PanelLeftClose, PanelLeft
+  BarChart3, Settings, LogOut, Menu, GraduationCap, Upload, ClipboardList,
+  CheckCircle, MessageSquare, ChevronDown, Search, PanelLeftClose, PanelLeft, UserCog
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,11 +15,7 @@ import {
 import bribteCrest from "@/assets/bribte-crest.png";
 import { motion, AnimatePresence } from "framer-motion";
 
-interface NavItem {
-  label: string;
-  icon: React.ElementType;
-  path: string;
-}
+interface NavItem { label: string; icon: React.ElementType; path: string; }
 
 const studentNav: NavItem[] = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/student" },
@@ -37,13 +33,14 @@ const lecturerNav: NavItem[] = [
   { label: "Assignments", icon: ClipboardList, path: "/lecturer/assignments" },
   { label: "Submissions", icon: Upload, path: "/lecturer/submissions" },
   { label: "Grade Entry", icon: CheckCircle, path: "/lecturer/grades" },
-  { label: "Materials", icon: FileText, path: "/lecturer/materials" },
   { label: "Announcements", icon: MessageSquare, path: "/lecturer/announcements" },
 ];
 
 const adminNav: NavItem[] = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/admin" },
   { label: "Students", icon: Users, path: "/admin/students" },
+  { label: "Lecturers", icon: UserCog, path: "/admin/lecturers" },
+  { label: "Courses", icon: BookOpen, path: "/admin/courses" },
   { label: "Fee Management", icon: CreditCard, path: "/admin/fees" },
   { label: "Enrollment", icon: GraduationCap, path: "/admin/enrollment" },
   { label: "Announcements", icon: Bell, path: "/admin/announcements" },
@@ -63,16 +60,15 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const navItems = user.role === "student" ? studentNav : user.role === "lecturer" ? lecturerNav : adminNav;
   const roleLabel = user.role === "student" ? "Student Portal" : user.role === "lecturer" ? "Lecturer Portal" : "Admin Portal";
   const roleColor = user.role === "student" ? "bg-info" : user.role === "lecturer" ? "bg-success" : "bg-accent";
-  const initials = user.name.split(" ").map(n => n[0]).join("").slice(0, 2);
+  const initials = user.fullName.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate("/login");
   };
 
   const NavContent = ({ collapsed = false }: { collapsed?: boolean }) => (
     <>
-      {/* Logo */}
       <div className="p-4 mb-2">
         <div className="flex items-center gap-3">
           <img src={bribteCrest} alt="BRIBTE" className="w-9 h-9 object-contain flex-shrink-0 drop-shadow-md" />
@@ -84,29 +80,16 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           )}
         </div>
       </div>
-
-      <div className="px-3 mb-3">
-        <div className="h-px bg-sidebar-border/50" />
-      </div>
-
-      {/* Nav items */}
+      <div className="px-3 mb-3"><div className="h-px bg-sidebar-border/50" /></div>
       <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
         {navItems.map((item, i) => {
           const active = location.pathname === item.path;
           return (
-            <motion.button
-              key={item.path}
-              initial={{ opacity: 0, x: -12 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.04 }}
+            <motion.button key={item.path} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
               onClick={() => { navigate(item.path); setMobileOpen(false); }}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] transition-all duration-200 ${
-                active
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold shadow-sm"
-                  : "text-sidebar-foreground/60 hover:bg-sidebar-muted hover:text-sidebar-foreground"
-              }`}
-              title={collapsed ? item.label : undefined}
-            >
+                active ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold shadow-sm" : "text-sidebar-foreground/60 hover:bg-sidebar-muted hover:text-sidebar-foreground"
+              }`} title={collapsed ? item.label : undefined}>
               <item.icon className={`w-[18px] h-[18px] flex-shrink-0 ${active ? "text-sidebar-primary" : ""}`} />
               {!collapsed && <span>{item.label}</span>}
               {active && !collapsed && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-sidebar-primary" />}
@@ -114,15 +97,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           );
         })}
       </nav>
-
-      {/* User section */}
       <div className="p-3 mt-2">
         <div className="h-px bg-sidebar-border/50 mb-3" />
-        <button
-          onClick={handleLogout}
+        <button onClick={handleLogout}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] text-sidebar-foreground/50 hover:bg-sidebar-muted hover:text-sidebar-foreground transition-all duration-200"
-          title={collapsed ? "Sign Out" : undefined}
-        >
+          title={collapsed ? "Sign Out" : undefined}>
           <LogOut className="w-[18px] h-[18px] flex-shrink-0" />
           {!collapsed && <span>Sign Out</span>}
         </button>
@@ -132,36 +111,27 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen flex bg-background">
-      {/* Desktop sidebar */}
-      <motion.aside
-        initial={false}
-        animate={{ width: sidebarOpen ? 250 : 72 }}
+      <motion.aside initial={false} animate={{ width: sidebarOpen ? 250 : 72 }}
         transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
-        className="hidden lg:flex flex-col sidebar-gradient relative z-30 overflow-hidden flex-shrink-0"
-      >
+        className="hidden lg:flex flex-col sidebar-gradient relative z-30 overflow-hidden flex-shrink-0">
         <NavContent collapsed={!sidebarOpen} />
       </motion.aside>
 
-      {/* Mobile sidebar overlay */}
       <AnimatePresence>
         {mobileOpen && (
           <div className="fixed inset-0 z-50 lg:hidden">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="absolute inset-0 bg-foreground/40 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
-            <motion.aside
-              initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }}
+            <motion.aside initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="absolute left-0 top-0 bottom-0 w-[270px] sidebar-gradient flex flex-col shadow-2xl"
-            >
+              className="absolute left-0 top-0 bottom-0 w-[270px] sidebar-gradient flex flex-col shadow-2xl">
               <NavContent />
             </motion.aside>
           </div>
         )}
       </AnimatePresence>
 
-      {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top header */}
         <header className="h-16 bg-card/80 backdrop-blur-lg border-b flex items-center justify-between px-4 lg:px-6 sticky top-0 z-40">
           <div className="flex items-center gap-2">
             <button onClick={() => { if (window.innerWidth >= 1024) setSidebarOpen(!sidebarOpen); else setMobileOpen(true); }}
@@ -180,10 +150,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 )}
               </AnimatePresence>
             </button>
-            
             <div className="hidden md:flex items-center gap-2 bg-muted/60 rounded-xl px-3.5 py-2 w-72 border border-transparent focus-within:border-primary/20 focus-within:bg-card transition-all duration-200">
               <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-              <Input placeholder="Search students, courses..." className="border-0 bg-transparent p-0 h-auto text-sm focus-visible:ring-0 placeholder:text-muted-foreground/50" />
+              <Input placeholder="Search..." className="border-0 bg-transparent p-0 h-auto text-sm focus-visible:ring-0 placeholder:text-muted-foreground/50" />
             </div>
           </div>
 
@@ -192,9 +161,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               <Bell className="w-[18px] h-[18px] text-muted-foreground" />
               <span className="absolute top-2 right-2 w-2 h-2 bg-destructive rounded-full ring-2 ring-card" />
             </button>
-
             <div className="w-px h-6 bg-border mx-1 hidden sm:block" />
-
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-2.5 py-1.5 px-2 rounded-xl hover:bg-muted transition-colors">
@@ -202,7 +169,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                     <AvatarFallback className="bg-primary text-primary-foreground text-xs font-bold">{initials}</AvatarFallback>
                   </Avatar>
                   <div className="hidden sm:block text-left">
-                    <p className="text-sm font-semibold leading-tight">{user.name}</p>
+                    <p className="text-sm font-semibold leading-tight">{user.fullName}</p>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <span className={`w-1.5 h-1.5 rounded-full ${roleColor}`} />
                       <p className="text-[11px] text-muted-foreground leading-tight capitalize">{user.role}</p>
@@ -220,8 +187,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             </DropdownMenu>
           </div>
         </header>
-
-        {/* Page content */}
         <main className="flex-1 p-4 lg:p-6 overflow-auto">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
             {children}
