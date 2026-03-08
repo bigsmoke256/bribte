@@ -605,5 +605,6 @@ export default function AdminSchedulingPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </DashboardLayout>
   );
 }
