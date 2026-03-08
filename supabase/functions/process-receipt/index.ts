@@ -285,13 +285,8 @@ Return ONLY the JSON, no markdown, no explanation.`,
       const indicators = (extracted.fraud_indicators || []).join("; ");
       validationFlags.fraud_detected = true;
       validationFlags.fraud_indicators = extracted.fraud_indicators;
-      await supabase.from("receipt_uploads").update({
-        status: "rejected",
-        review_notes: `Receipt rejected: AI detected this is NOT a genuine SchoolPay receipt. Indicators: ${indicators || "Document does not match expected receipt format."}`,
-      }).eq("id", receipt_id);
-      await supabase.from("receipt_extractions").update({ validation_flags: validationFlags })
-        .eq("receipt_id", receipt_id);
-      return jsonResponse({ status: "rejected", reason: "fake_receipt", indicators: extracted.fraud_indicators });
+      const notes = `Receipt rejected: AI detected this is NOT a genuine SchoolPay receipt. Indicators: ${indicators || "Document does not match expected receipt format."}`;
+      return await rejectWithAlert("fake_receipt", notes, { indicators: extracted.fraud_indicators });
     }
 
     // CHECK 1: Structure validation - mandatory fields
