@@ -212,7 +212,6 @@ export default function AdminStudentsPage() {
   if (!user) return null;
 
   return (
-    <DashboardLayout>
       <div className="space-y-6 max-w-[1400px] mx-auto">
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }}
