@@ -2,7 +2,7 @@ import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState, useMemo } from "react";
 import { AnimatedCard, SectionHeader, EmptyState } from "@/components/dashboard/DashboardParts";
-import { CreditCard, Upload, CheckCircle, Clock, XCircle, Receipt, Info } from "lucide-react";
+import { CreditCard, Upload, CheckCircle, Clock, XCircle, Receipt, Info, FileDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { PaymentReceipt } from "@/components/PaymentReceipt";
 
 interface FeeItem {
   id: string; name: string; amount: number; frequency: string;
@@ -29,6 +30,8 @@ export default function StudentFeesPage() {
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadAmount, setUploadAmount] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [receiptOpen, setReceiptOpen] = useState(false);
+  const [receiptPayment, setReceiptPayment] = useState<any>(null);
 
   useEffect(() => { if (user) loadData(); }, [user]);
 
@@ -109,6 +112,26 @@ export default function StudentFeesPage() {
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
 
+  const getReceiptData = (p: any) => {
+    if (!student || !course) return null;
+    const approved = payments.filter(pm => pm.payment_status === "approved");
+    const totalPaidToDate = approved.reduce((s: number, pm: any) => s + Number(pm.amount), 0);
+    return {
+      studentName: user?.fullName || user?.email || "",
+      registrationNumber: student.registration_number || "",
+      courseName: course.course_name || "",
+      courseCode: course.course_code || "",
+      studyMode: student.study_mode || "Day",
+      paymentAmount: Number(p.amount),
+      paymentDate: p.payment_date,
+      paymentStatus: p.payment_status,
+      receiptNumber: `RCP-${p.id.slice(0, 8).toUpperCase()}`,
+      tuition,
+      totalPaid: totalPaidToDate,
+      balance: student.fee_balance,
+    };
+  };
+
   return (
     <div className="space-y-6 max-w-[1400px] mx-auto">
       <div className="flex items-center justify-between">
@@ -118,6 +141,20 @@ export default function StudentFeesPage() {
         </div>
         <Button onClick={() => setUploadOpen(true)}><Upload className="w-4 h-4 mr-2" /> Upload Receipt</Button>
       </div>
+
+      {/* Balance Alert */}
+      {stats.balance > 0 && (
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+          className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 flex items-start gap-3">
+          <Info className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-destructive">Outstanding Fee Balance: UGX {stats.balance.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              You have paid UGX {stats.totalPaid.toLocaleString()} out of UGX {tuition.toLocaleString()}. Please clear the remaining balance to avoid penalties.
+            </p>
+          </div>
+        </motion.div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -244,8 +281,13 @@ export default function StudentFeesPage() {
                     <p className="text-xs text-muted-foreground">{new Date(p.payment_date).toLocaleDateString("en-UG", { year: "numeric", month: "short", day: "numeric" })}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  {p.receipt_url && <a href={p.receipt_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">View Receipt</a>}
+                <div className="flex items-center gap-2">
+                  {p.payment_status === "approved" && (
+                    <Button size="sm" variant="ghost" className="h-7 px-2 rounded-lg text-xs" onClick={() => { setReceiptPayment(p); setReceiptOpen(true); }}>
+                      <FileDown className="w-3 h-3 mr-1" /> Receipt
+                    </Button>
+                  )}
+                  {p.receipt_url && <a href={p.receipt_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">View Upload</a>}
                   <Badge variant={p.payment_status === "approved" ? "default" : p.payment_status === "pending" ? "secondary" : "destructive"} className="text-[10px] h-5">
                     {p.payment_status}
                   </Badge>
@@ -269,6 +311,12 @@ export default function StudentFeesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <PaymentReceipt
+        open={receiptOpen}
+        onOpenChange={setReceiptOpen}
+        data={receiptPayment ? getReceiptData(receiptPayment) : null}
+      />
     </div>
   );
 }

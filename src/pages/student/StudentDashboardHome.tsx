@@ -1,7 +1,7 @@
 import { useAuth } from "@/lib/auth-context";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { AnimatedCard, SectionHeader, EmptyState } from "@/components/dashboard/DashboardParts";
-import { CreditCard, FileText, BookOpen, Bell, Upload, AlertTriangle, GraduationCap } from "lucide-react";
+import { CreditCard, FileText, BookOpen, Bell, Upload, AlertTriangle, GraduationCap, CircleAlert } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -117,6 +117,26 @@ export default function StudentDashboardHome() {
           </div>
         </div>
       </motion.div>
+
+      {/* Fee Balance Alert */}
+      {feeStats.balance > 0 && (
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+          className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 flex items-start gap-3">
+          <div className="h-9 w-9 rounded-lg bg-destructive/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <CircleAlert className="w-5 h-5 text-destructive" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-destructive">Outstanding Fee Balance</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              You have an outstanding balance of <span className="font-bold text-destructive">UGX {feeStats.balance.toLocaleString()}</span>. 
+              Please make a payment to avoid penalties. Your tuition is UGX {feeStats.totalFees.toLocaleString()} and you've paid UGX {feeStats.totalPaid.toLocaleString()}.
+            </p>
+          </div>
+          <Button variant="outline" size="sm" className="rounded-lg border-destructive/30 text-destructive hover:bg-destructive/10 text-xs flex-shrink-0" onClick={() => setUploadOpen(true)}>
+            Pay Now
+          </Button>
+        </motion.div>
+      )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="Fee Balance" value={`${(feeStats.balance / 1000).toFixed(0)}K`} subtitle={`UGX • ${feeStats.percentage.toFixed(0)}% paid`} icon={CreditCard} variant={feeStats.percentage >= 75 ? "success" : "warning"} delay={0} />
