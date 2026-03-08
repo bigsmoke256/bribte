@@ -199,9 +199,10 @@ export default function StudentAssignmentsPage() {
             <DialogTitle>Submit Assignment</DialogTitle>
             <DialogDescription>Upload your work for "{selectedAssignment?.title}"</DialogDescription>
           </DialogHeader>
-          <div className="py-2">
+          <div className="py-2 space-y-2">
             <Label>Upload File</Label>
             <Input type="file" onChange={e => setSubmitFile(e.target.files?.[0] || null)} />
+            <p className="text-xs text-muted-foreground">Accepted: PDF, Word, PowerPoint, Excel, images, audio, video, and more. Max size: 100MB.</p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setSubmitOpen(false)}>Cancel</Button>
