@@ -21,6 +21,7 @@ import AdminAcademicCalendarPage from "./AdminAcademicCalendarPage";
 import AdminDocumentsPage from "./AdminDocumentsPage";
 import AdminAlumniPage from "./AdminAlumniPage";
 import AdminAuditLogPage from "./AdminAuditLogPage";
+import AdminPoliciesPage from "./AdminPoliciesPage";
 import ProfileSettingsPage from "../shared/ProfileSettingsPage";
 
 export default function AdminDashboard() {
