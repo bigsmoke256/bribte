@@ -281,6 +281,7 @@ export default function AdminCoursesPage() {
   if (!user) return null;
 
   return (
+    <>
       <div className="space-y-6 max-w-[1400px] mx-auto">
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }}
