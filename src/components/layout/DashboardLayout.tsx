@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
@@ -12,9 +12,13 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 import bribteCrest from "@/assets/bribte-crest.png";
 import { motion, AnimatePresence } from "framer-motion";
-
+import { supabase } from "@/integrations/supabase/client";
+import { formatDistanceToNow } from "date-fns";
 interface NavItem { label: string; icon: React.ElementType; path: string; }
 
 const studentNav: NavItem[] = [
@@ -48,12 +52,46 @@ const adminNav: NavItem[] = [
   { label: "Settings", icon: Settings, path: "/admin/settings" },
 ];
 
+interface Announcement {
+  id: string;
+  title: string;
+  message: string;
+  priority: string;
+  created_at: string;
+  target_group: string;
+}
+
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Announcement[]>([]);
+  const [readIds, setReadIds] = useState<Set<string>>(() => {
+    const stored = localStorage.getItem("read_notifications");
+    return stored ? new Set(JSON.parse(stored)) : new Set();
+  });
+
+  useEffect(() => {
+    supabase.from("announcements").select("id, title, message, priority, created_at, target_group")
+      .order("created_at", { ascending: false }).limit(20)
+      .then(({ data }) => { if (data) setNotifications(data); });
+  }, []);
+
+  const unreadCount = notifications.filter(n => !readIds.has(n.id)).length;
+
+  const markAllRead = () => {
+    const allIds = new Set(notifications.map(n => n.id));
+    setReadIds(allIds);
+    localStorage.setItem("read_notifications", JSON.stringify([...allIds]));
+  };
+
+  const markRead = (id: string) => {
+    const updated = new Set(readIds).add(id);
+    setReadIds(updated);
+    localStorage.setItem("read_notifications", JSON.stringify([...updated]));
+  };
 
   if (!user) return null;
 
@@ -157,10 +195,50 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-2">
-            <button className="relative w-9 h-9 rounded-xl flex items-center justify-center hover:bg-muted transition-colors">
-              <Bell className="w-[18px] h-[18px] text-muted-foreground" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-destructive rounded-full ring-2 ring-card" />
-            </button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className="relative w-9 h-9 rounded-xl flex items-center justify-center hover:bg-muted transition-colors">
+                  <Bell className="w-[18px] h-[18px] text-muted-foreground" />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-1.5 right-1.5 min-w-[16px] h-4 px-1 bg-destructive rounded-full ring-2 ring-card flex items-center justify-center">
+                      <span className="text-[10px] font-bold text-destructive-foreground">{unreadCount > 9 ? "9+" : unreadCount}</span>
+                    </span>
+                  )}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-80 p-0 rounded-xl">
+                <div className="flex items-center justify-between px-4 py-3 border-b">
+                  <h4 className="font-display font-semibold text-sm">Notifications</h4>
+                  {unreadCount > 0 && (
+                    <button onClick={markAllRead} className="text-xs text-primary hover:underline">Mark all read</button>
+                  )}
+                </div>
+                <ScrollArea className="max-h-80">
+                  {notifications.length === 0 ? (
+                    <div className="py-8 text-center text-sm text-muted-foreground">No notifications yet</div>
+                  ) : (
+                    notifications.map(n => (
+                      <button key={n.id} onClick={() => markRead(n.id)}
+                        className={`w-full text-left px-4 py-3 border-b last:border-0 hover:bg-muted/50 transition-colors ${!readIds.has(n.id) ? "bg-primary/5" : ""}`}>
+                        <div className="flex items-start gap-2">
+                          <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${n.priority === "urgent" ? "bg-destructive" : n.priority === "important" ? "bg-warning" : "bg-info"}`} />
+                          <div className="min-w-0 flex-1">
+                            <p className={`text-sm leading-tight ${!readIds.has(n.id) ? "font-semibold" : "font-medium text-muted-foreground"}`}>{n.title}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.message}</p>
+                            <p className="text-[10px] text-muted-foreground/60 mt-1">{formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}</p>
+                          </div>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </ScrollArea>
+                {user.role === "admin" && (
+                  <div className="border-t px-4 py-2.5">
+                    <button onClick={() => navigate("/admin/announcements")} className="text-xs text-primary hover:underline w-full text-center">Manage Announcements</button>
+                  </div>
+                )}
+              </PopoverContent>
+            </Popover>
             <div className="w-px h-6 bg-border mx-1 hidden sm:block" />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
