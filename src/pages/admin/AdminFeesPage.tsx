@@ -42,8 +42,11 @@ interface StudentBalance {
   fee_balance: number;
   user_id: string;
   course_id: string | null;
+  study_mode: string;
   profile?: { full_name: string; email: string };
-  course?: { course_name: string; tuition_day: number | null } | null;
+  course?: { course_name: string; course_code: string; tuition_day: number | null; tuition_evening: number | null; tuition_weekend: number | null } | null;
+  totalPaid?: number;
+  tuition?: number;
 }
 
 const CHART_COLORS = [
@@ -100,22 +103,41 @@ export default function AdminFeesPage() {
 
   const fetchBalances = useCallback(async () => {
     const { data: students } = await supabase.from("students")
-      .select("id, registration_number, fee_balance, user_id, course_id")
+      .select("id, registration_number, fee_balance, user_id, course_id, study_mode")
       .order("fee_balance", { ascending: false });
     if (!students) return;
     const userIds = students.map(s => s.user_id);
     const courseIds = students.map(s => s.course_id).filter(Boolean) as string[];
-    const [profilesRes, coursesRes] = await Promise.all([
+    const studentIds = students.map(s => s.id);
+    const [profilesRes, coursesRes, paymentsRes] = await Promise.all([
       supabase.from("profiles").select("user_id, full_name, email").in("user_id", userIds.length ? userIds : ["_"]),
-      courseIds.length ? supabase.from("courses").select("id, course_name, tuition_day").in("id", courseIds) : Promise.resolve({ data: [] }),
+      courseIds.length ? supabase.from("courses").select("id, course_name, course_code, tuition_day, tuition_evening, tuition_weekend").in("id", courseIds) : Promise.resolve({ data: [] }),
+      supabase.from("payments").select("student_id, amount").eq("payment_status", "approved"),
     ]);
     const profileMap = new Map((profilesRes.data || []).map(p => [p.user_id, p]));
     const courseMap = new Map((coursesRes.data || []).map((c: any) => [c.id, c]));
-    setBalances(students.map(s => ({
-      ...s,
-      profile: profileMap.get(s.user_id),
-      course: s.course_id ? courseMap.get(s.course_id) || null : null,
-    })));
+    // Sum approved payments per student
+    const paidMap = new Map<string, number>();
+    (paymentsRes.data || []).forEach((p: any) => {
+      paidMap.set(p.student_id, (paidMap.get(p.student_id) || 0) + Number(p.amount));
+    });
+    setBalances(students.map(s => {
+      const course = s.course_id ? courseMap.get(s.course_id) || null : null;
+      const mode = s.study_mode;
+      let tuition = 0;
+      if (course) {
+        if (mode === "Evening") tuition = Number(course.tuition_evening) || Number(course.tuition_day) || 0;
+        else if (mode === "Weekend") tuition = Number(course.tuition_weekend) || Number(course.tuition_day) || 0;
+        else tuition = Number(course.tuition_day) || 0;
+      }
+      return {
+        ...s,
+        profile: profileMap.get(s.user_id),
+        course,
+        totalPaid: paidMap.get(s.id) || 0,
+        tuition,
+      };
+    }));
   }, []);
 
   useEffect(() => {
@@ -157,7 +179,7 @@ export default function AdminFeesPage() {
     const { error } = await supabase.from("payments")
       .update({ payment_status: status, approved_by: user?.id || null })
       .eq("id", p.id);
-    if (!error) { toast.success(`Payment ${status}`); fetchPayments(); }
+    if (!error) { toast.success(`Payment ${status}`); fetchPayments(); fetchBalances(); }
     else toast.error(error.message);
   };
 
@@ -386,30 +408,49 @@ export default function AdminFeesPage() {
                     <thead>
                       <tr>
                         <th className="pl-5">Student</th><th>Reg. Number</th><th>Course</th>
-                        <th className="text-right">Fee Balance</th><th className="text-center pr-5">History</th>
+                        <th>Mode</th><th className="text-right">Tuition</th>
+                        <th className="text-right">Paid</th><th className="text-right">Balance</th>
+                        <th className="text-center">Status</th><th className="text-center pr-5">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredBalances.map((s, i) => (
-                        <motion.tr key={s.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.015 }}>
-                          <td className="pl-5">
-                            <p className="text-sm font-semibold">{s.profile?.full_name || "—"}</p>
-                            <p className="text-xs text-muted-foreground">{s.profile?.email}</p>
-                          </td>
-                          <td className="text-sm font-mono">{s.registration_number || "—"}</td>
-                          <td className="text-sm">{s.course?.course_name || "—"}</td>
-                          <td className="text-right">
-                            <span className={`font-mono text-sm font-semibold ${s.fee_balance > 0 ? "text-destructive" : "text-green-600 dark:text-green-400"}`}>
-                              UGX {s.fee_balance.toLocaleString()}
-                            </span>
-                          </td>
-                          <td className="text-center pr-5">
-                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0 rounded-lg" onClick={() => openStudentHistory(s)} title="Payment History">
-                              <Eye className="w-3.5 h-3.5" />
-                            </Button>
-                          </td>
-                        </motion.tr>
-                      ))}
+                      {filteredBalances.map((s, i) => {
+                        const isCleared = s.fee_balance <= 0;
+                        return (
+                          <motion.tr key={s.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.015 }}>
+                            <td className="pl-5">
+                              <p className="text-sm font-semibold">{s.profile?.full_name || "—"}</p>
+                              <p className="text-xs text-muted-foreground">{s.profile?.email}</p>
+                            </td>
+                            <td className="text-sm font-mono">{s.registration_number || "—"}</td>
+                            <td className="text-sm">{s.course?.course_name || "—"}</td>
+                            <td><Badge variant="outline" className="text-[10px]">{s.study_mode}</Badge></td>
+                            <td className="text-right text-sm font-mono">UGX {(s.tuition || 0).toLocaleString()}</td>
+                            <td className="text-right text-sm font-mono text-green-600 dark:text-green-400">UGX {(s.totalPaid || 0).toLocaleString()}</td>
+                            <td className="text-right">
+                              <span className={`font-mono text-sm font-semibold ${s.fee_balance > 0 ? "text-destructive" : "text-green-600 dark:text-green-400"}`}>
+                                UGX {s.fee_balance.toLocaleString()}
+                              </span>
+                            </td>
+                            <td className="text-center">
+                              {isCleared ? (
+                                <Badge className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20 text-[10px]">
+                                  <CheckCircle className="w-3 h-3 mr-1" /> Cleared
+                                </Badge>
+                              ) : (
+                                <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 text-[10px]">
+                                  <AlertTriangle className="w-3 h-3 mr-1" /> Owing
+                                </Badge>
+                              )}
+                            </td>
+                            <td className="text-center pr-5">
+                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0 rounded-lg" onClick={() => openStudentHistory(s)} title="Payment History">
+                                <Eye className="w-3.5 h-3.5" />
+                              </Button>
+                            </td>
+                          </motion.tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -537,11 +578,31 @@ export default function AdminFeesPage() {
                   <div>
                     <DialogTitle className="font-display">{historyStudent.profile?.full_name}</DialogTitle>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {historyStudent.registration_number || "No Reg#"} · Balance: <span className={`font-mono font-semibold ${historyStudent.fee_balance > 0 ? "text-destructive" : "text-green-600 dark:text-green-400"}`}>UGX {historyStudent.fee_balance.toLocaleString()}</span>
+                      {historyStudent.registration_number || "No Reg#"} · {historyStudent.course?.course_name || "No course"} · {historyStudent.study_mode}
                     </p>
                   </div>
                 </div>
               </DialogHeader>
+
+              {/* Fee Summary */}
+              <div className="grid grid-cols-3 gap-3 mt-2">
+                <div className="p-3 rounded-xl bg-muted/40 text-center">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase">Tuition</p>
+                  <p className="font-display font-bold text-sm mt-1">UGX {(historyStudent.tuition || 0).toLocaleString()}</p>
+                </div>
+                <div className="p-3 rounded-xl bg-green-500/5 text-center">
+                  <p className="text-[10px] font-semibold text-green-600 dark:text-green-400 uppercase">Paid</p>
+                  <p className="font-display font-bold text-sm mt-1 text-green-600 dark:text-green-400">UGX {(historyStudent.totalPaid || 0).toLocaleString()}</p>
+                </div>
+                <div className={`p-3 rounded-xl text-center ${historyStudent.fee_balance > 0 ? "bg-destructive/5" : "bg-green-500/5"}`}>
+                  <p className={`text-[10px] font-semibold uppercase ${historyStudent.fee_balance > 0 ? "text-destructive" : "text-green-600 dark:text-green-400"}`}>
+                    {historyStudent.fee_balance > 0 ? "Balance" : "Status"}
+                  </p>
+                  <p className={`font-display font-bold text-sm mt-1 ${historyStudent.fee_balance > 0 ? "text-destructive" : "text-green-600 dark:text-green-400"}`}>
+                    {historyStudent.fee_balance > 0 ? `UGX ${historyStudent.fee_balance.toLocaleString()}` : "✓ Cleared"}
+                  </p>
+                </div>
+              </div>
 
               <div className="mt-4">
                 <h3 className="text-sm font-semibold mb-3">Payment History ({studentPayments.length})</h3>
