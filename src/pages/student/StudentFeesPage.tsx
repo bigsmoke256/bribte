@@ -250,19 +250,14 @@ export default function StudentFeesPage() {
         onViewReceipt={(p) => { setReceiptPayment(p); setReceiptOpen(true); }}
       />
 
-      <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Upload Payment Receipt</DialogTitle><DialogDescription>Upload your receipt for verification.</DialogDescription></DialogHeader>
-          <div className="space-y-4 py-2">
-            <div><Label>Amount Paid (UGX)</Label><Input type="number" placeholder="e.g. 500000" value={uploadAmount} onChange={e => setUploadAmount(e.target.value)} /></div>
-            <div><Label>Receipt File</Label><Input type="file" accept="image/*,.pdf" onChange={e => setUploadFile(e.target.files?.[0] || null)} /></div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setUploadOpen(false)}>Cancel</Button>
-            <Button onClick={handleUpload} disabled={uploading || !uploadFile || !uploadAmount}>{uploading ? "Uploading..." : "Submit"}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* AI-Powered Receipt Upload */}
+      <ReceiptUploadDialog
+        open={uploadOpen}
+        onOpenChange={setUploadOpen}
+        studentId={student?.id || ""}
+        courseId={student?.course_id || null}
+        onComplete={loadData}
+      />
 
       <PaymentReceipt
         open={receiptOpen}
