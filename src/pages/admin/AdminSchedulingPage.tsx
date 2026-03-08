@@ -456,7 +456,7 @@ export default function AdminSchedulingPage() {
                         <div className="flex items-center gap-1">
                           <Select
                             value={session.status}
-                            onValueChange={(status) => updateSessionMutation.mutate({ id: session.id, status })}
+                            onValueChange={(status: "scheduled" | "live" | "completed" | "cancelled") => updateSessionMutation.mutate({ id: session.id, status })}
                           >
                             <SelectTrigger className="w-[120px] h-8 text-xs">
                               <SelectValue />
