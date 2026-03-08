@@ -230,6 +230,7 @@ export type Database = {
           id: string
           is_published: boolean
           lecturer_id: string | null
+          max_capacity: number | null
           program_level: string
           tuition_day: number | null
           tuition_evening: number | null
@@ -246,6 +247,7 @@ export type Database = {
           id?: string
           is_published?: boolean
           lecturer_id?: string | null
+          max_capacity?: number | null
           program_level?: string
           tuition_day?: number | null
           tuition_evening?: number | null
@@ -262,6 +264,7 @@ export type Database = {
           id?: string
           is_published?: boolean
           lecturer_id?: string | null
+          max_capacity?: number | null
           program_level?: string
           tuition_day?: number | null
           tuition_evening?: number | null
@@ -303,6 +306,7 @@ export type Database = {
           created_at: string
           id: string
           semester: number
+          status: string
           student_id: string
           study_mode: string
         }
@@ -312,6 +316,7 @@ export type Database = {
           created_at?: string
           id?: string
           semester?: number
+          status?: string
           student_id: string
           study_mode?: string
         }
@@ -321,6 +326,7 @@ export type Database = {
           created_at?: string
           id?: string
           semester?: number
+          status?: string
           student_id?: string
           study_mode?: string
         }
