@@ -52,12 +52,46 @@ const adminNav: NavItem[] = [
   { label: "Settings", icon: Settings, path: "/admin/settings" },
 ];
 
+interface Announcement {
+  id: string;
+  title: string;
+  message: string;
+  priority: string;
+  created_at: string;
+  target_group: string;
+}
+
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Announcement[]>([]);
+  const [readIds, setReadIds] = useState<Set<string>>(() => {
+    const stored = localStorage.getItem("read_notifications");
+    return stored ? new Set(JSON.parse(stored)) : new Set();
+  });
+
+  useEffect(() => {
+    supabase.from("announcements").select("id, title, message, priority, created_at, target_group")
+      .order("created_at", { ascending: false }).limit(20)
+      .then(({ data }) => { if (data) setNotifications(data); });
+  }, []);
+
+  const unreadCount = notifications.filter(n => !readIds.has(n.id)).length;
+
+  const markAllRead = () => {
+    const allIds = new Set(notifications.map(n => n.id));
+    setReadIds(allIds);
+    localStorage.setItem("read_notifications", JSON.stringify([...allIds]));
+  };
+
+  const markRead = (id: string) => {
+    const updated = new Set(readIds).add(id);
+    setReadIds(updated);
+    localStorage.setItem("read_notifications", JSON.stringify([...updated]));
+  };
 
   if (!user) return null;
 
