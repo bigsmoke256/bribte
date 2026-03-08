@@ -61,28 +61,24 @@ export default function HelpSupportPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="flex items-center gap-3 p-3 rounded-xl bg-background border">
+            <a href="mailto:musinguzij619@gmail.com?subject=BRIBTE%20Support%20Request" className="flex items-center gap-3 p-3 rounded-xl bg-background border hover:border-primary/40 hover:bg-primary/5 transition-colors cursor-pointer">
               <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                 <Mail className="w-5 h-5 text-primary" />
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Email</p>
-                <a href="mailto:musinguzij619@gmail.com" className="text-sm font-medium text-foreground hover:text-primary transition-colors">
-                  musinguzij619@gmail.com
-                </a>
+                <p className="text-sm font-medium text-foreground">musinguzij619@gmail.com</p>
               </div>
-            </div>
-            <div className="flex items-center gap-3 p-3 rounded-xl bg-background border">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <Phone className="w-5 h-5 text-primary" />
+            </a>
+            <a href="https://wa.me/256761255464?text=Hello%2C%20I%20need%20help%20with%20the%20BRIBTE%20system" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl bg-background border hover:border-green-500/40 hover:bg-green-500/5 transition-colors cursor-pointer">
+              <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center">
+                <Phone className="w-5 h-5 text-green-600" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Phone / WhatsApp</p>
-                <a href="tel:+256761255464" className="text-sm font-medium text-foreground hover:text-primary transition-colors">
-                  +256 761 255 464
-                </a>
+                <p className="text-xs text-muted-foreground">WhatsApp</p>
+                <p className="text-sm font-medium text-foreground">+256 761 255 464</p>
               </div>
-            </div>
+            </a>
           </div>
 
           <div className="flex flex-wrap gap-2 mt-4">
