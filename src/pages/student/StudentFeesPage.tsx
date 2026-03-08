@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { PaymentReceipt } from "@/components/PaymentReceipt";
 import { FeeBreakdownSection } from "@/components/fees/FeeBreakdownSection";
 import { PaymentHistorySection } from "@/components/fees/PaymentHistorySection";
+import { ReceiptUploadDialog } from "@/components/fees/ReceiptUploadDialog";
 
 interface FeeItem {
   id: string; name: string; amount: number; frequency: string;
@@ -190,7 +191,7 @@ export default function StudentFeesPage() {
           <h1 className="font-display text-2xl font-bold">Fees & Payments</h1>
           <p className="text-sm text-muted-foreground mt-1">Track your tuition and fee payments</p>
         </div>
-        <Button onClick={() => setUploadOpen(true)}><Upload className="w-4 h-4 mr-2" /> Upload Receipt</Button>
+        <Button onClick={() => setUploadOpen(true)}><Upload className="w-4 h-4 mr-2" /> Upload Receipt (AI Verified)</Button>
       </div>
 
       {/* Balance Alert */}
@@ -249,19 +250,14 @@ export default function StudentFeesPage() {
         onViewReceipt={(p) => { setReceiptPayment(p); setReceiptOpen(true); }}
       />
 
-      <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Upload Payment Receipt</DialogTitle><DialogDescription>Upload your receipt for verification.</DialogDescription></DialogHeader>
-          <div className="space-y-4 py-2">
-            <div><Label>Amount Paid (UGX)</Label><Input type="number" placeholder="e.g. 500000" value={uploadAmount} onChange={e => setUploadAmount(e.target.value)} /></div>
-            <div><Label>Receipt File</Label><Input type="file" accept="image/*,.pdf" onChange={e => setUploadFile(e.target.files?.[0] || null)} /></div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setUploadOpen(false)}>Cancel</Button>
-            <Button onClick={handleUpload} disabled={uploading || !uploadFile || !uploadAmount}>{uploading ? "Uploading..." : "Submit"}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* AI-Powered Receipt Upload */}
+      <ReceiptUploadDialog
+        open={uploadOpen}
+        onOpenChange={setUploadOpen}
+        studentId={student?.id || ""}
+        courseId={student?.course_id || null}
+        onComplete={loadData}
+      />
 
       <PaymentReceipt
         open={receiptOpen}

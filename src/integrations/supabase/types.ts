@@ -575,6 +575,58 @@ export type Database = {
           },
         ]
       }
+      payment_transactions: {
+        Row: {
+          amount: number
+          course_id: string | null
+          created_at: string
+          id: string
+          receipt_id: string | null
+          student_id: string
+          transaction_id: string
+        }
+        Insert: {
+          amount: number
+          course_id?: string | null
+          created_at?: string
+          id?: string
+          receipt_id?: string | null
+          student_id: string
+          transaction_id: string
+        }
+        Update: {
+          amount?: number
+          course_id?: string | null
+          created_at?: string
+          id?: string
+          receipt_id?: string | null
+          student_id?: string
+          transaction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_transactions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_transactions_receipt_id_fkey"
+            columns: ["receipt_id"]
+            isOneToOne: false
+            referencedRelation: "receipt_uploads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_transactions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           academic_year: string | null
@@ -660,6 +712,110 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      receipt_extractions: {
+        Row: {
+          amount: number | null
+          confidence_score: number | null
+          created_at: string
+          id: string
+          payment_date: string | null
+          payment_provider: string | null
+          raw_text: string | null
+          receipt_id: string
+          sender_name: string | null
+          transaction_id: string | null
+        }
+        Insert: {
+          amount?: number | null
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          payment_date?: string | null
+          payment_provider?: string | null
+          raw_text?: string | null
+          receipt_id: string
+          sender_name?: string | null
+          transaction_id?: string | null
+        }
+        Update: {
+          amount?: number | null
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          payment_date?: string | null
+          payment_provider?: string | null
+          raw_text?: string | null
+          receipt_id?: string
+          sender_name?: string | null
+          transaction_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receipt_extractions_receipt_id_fkey"
+            columns: ["receipt_id"]
+            isOneToOne: false
+            referencedRelation: "receipt_uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      receipt_uploads: {
+        Row: {
+          course_id: string | null
+          created_at: string
+          file_hash: string | null
+          file_url: string
+          id: string
+          review_notes: string | null
+          reviewed_by: string | null
+          status: string
+          student_id: string
+          updated_at: string
+          uploaded_at: string
+        }
+        Insert: {
+          course_id?: string | null
+          created_at?: string
+          file_hash?: string | null
+          file_url: string
+          id?: string
+          review_notes?: string | null
+          reviewed_by?: string | null
+          status?: string
+          student_id: string
+          updated_at?: string
+          uploaded_at?: string
+        }
+        Update: {
+          course_id?: string | null
+          created_at?: string
+          file_hash?: string | null
+          file_url?: string
+          id?: string
+          review_notes?: string | null
+          reviewed_by?: string | null
+          status?: string
+          student_id?: string
+          updated_at?: string
+          uploaded_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receipt_uploads_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receipt_uploads_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       student_fee_selections: {
         Row: {

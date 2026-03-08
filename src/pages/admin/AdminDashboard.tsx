@@ -12,6 +12,7 @@ import AdminAttendancePage from "./AdminAttendancePage";
 import AdminAnnouncementsPage from "./AdminAnnouncementsPage";
 import AdminReportsPage from "./AdminReportsPage";
 import AdminSettingsPage from "./AdminSettingsPage";
+import AdminReceiptReviewPage from "./AdminReceiptReviewPage";
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -24,6 +25,7 @@ export default function AdminDashboard() {
   if (path === "/admin/lecturers") return <AdminLecturersPage />;
   if (path === "/admin/courses") return <AdminCoursesPage />;
   if (path === "/admin/fees") return <AdminFeesPage />;
+  if (path === "/admin/receipts") return <AdminReceiptReviewPage />;
   if (path === "/admin/enrollment") return <AdminEnrollmentPage />;
   if (path === "/admin/timetable") return <AdminTimetablePage />;
   if (path === "/admin/scheduling") return <AdminSchedulingPage />;
