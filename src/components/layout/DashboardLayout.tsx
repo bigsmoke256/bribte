@@ -4,7 +4,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, BookOpen, FileText, CreditCard, Calendar, Bell, Users,
   BarChart3, Settings, LogOut, Menu, GraduationCap, Upload, ClipboardList,
-  CheckCircle, MessageSquare, ChevronDown, Search, PanelLeftClose, PanelLeft, UserCog, Video, ClipboardCheck, Archive
+  CheckCircle, MessageSquare, ChevronDown, Search, PanelLeftClose, PanelLeft, UserCog, Video, ClipboardCheck, Archive,
+  PenTool, ShieldCheck, CalendarDays, Printer, UserCheck, Activity
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
