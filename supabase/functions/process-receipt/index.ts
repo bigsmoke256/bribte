@@ -300,13 +300,8 @@ Return ONLY the JSON, no markdown, no explanation.`,
 
     if (missingFields.length > 0) {
       validationFlags.missing_fields = missingFields;
-      await supabase.from("receipt_uploads").update({
-        status: "rejected",
-        review_notes: `Receipt rejected: missing mandatory fields: ${missingFields.join(", ")}. This may indicate a fake or incomplete receipt.`,
-      }).eq("id", receipt_id);
-      await supabase.from("receipt_extractions").update({ validation_flags: validationFlags })
-        .eq("receipt_id", receipt_id);
-      return jsonResponse({ status: "rejected", reason: "missing_fields", missing: missingFields });
+      const notes = `Receipt rejected: missing mandatory fields: ${missingFields.join(", ")}. This may indicate a fake or incomplete receipt.`;
+      return await rejectWithAlert("missing_fields", notes, { missing: missingFields });
     }
 
     // CHECK 2: Institution name must match BRIBTE
