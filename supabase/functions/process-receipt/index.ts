@@ -337,13 +337,8 @@ Return ONLY the JSON, no markdown, no explanation.`,
         .limit(1);
       if (dupTx && dupTx.length > 0) {
         validationFlags.duplicate_transaction = extracted.payment_code;
-        await supabase.from("receipt_uploads").update({
-          status: "rejected",
-          review_notes: `Duplicate transaction code: ${extracted.payment_code}. This receipt has already been processed.`,
-        }).eq("id", receipt_id);
-        await supabase.from("receipt_extractions").update({ validation_flags: validationFlags })
-          .eq("receipt_id", receipt_id);
-        return jsonResponse({ status: "rejected", reason: "duplicate_transaction" });
+        const notes = `Duplicate transaction code: ${extracted.payment_code}. This receipt has already been processed.`;
+        return await rejectWithAlert("duplicate_transaction", notes);
       }
     }
 
