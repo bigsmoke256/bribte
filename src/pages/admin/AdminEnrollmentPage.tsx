@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { AnimatedCard, EmptyState } from "@/components/dashboard/DashboardParts";
 import {
   GraduationCap, Search, PlusCircle, Trash2, CheckCircle, XCircle,

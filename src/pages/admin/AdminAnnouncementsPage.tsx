@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { AnimatedCard, EmptyState } from "@/components/dashboard/DashboardParts";
 import {
   Bell, Search, PlusCircle, Edit2, Trash2, Megaphone, Users,
