@@ -112,10 +112,21 @@ export default function AdminCoursesPage() {
         </motion.div>
 
         <AnimatedCard>
-          <div className="flex items-center gap-2 bg-muted/60 rounded-xl px-3.5 py-2 w-full sm:w-72 border border-transparent focus-within:border-primary/20 mb-4">
-            <Search className="w-4 h-4 text-muted-foreground" />
-            <Input placeholder="Search courses..." value={search} onChange={e => setSearch(e.target.value)}
-              className="border-0 bg-transparent p-0 h-auto text-sm focus-visible:ring-0" />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-4">
+            <div className="flex items-center gap-2 bg-muted/60 rounded-xl px-3.5 py-2 w-full sm:w-72 border border-transparent focus-within:border-primary/20">
+              <Search className="w-4 h-4 text-muted-foreground" />
+              <Input placeholder="Search courses..." value={search} onChange={e => setSearch(e.target.value)}
+                className="border-0 bg-transparent p-0 h-auto text-sm focus-visible:ring-0" />
+            </div>
+            <Select value={levelFilter} onValueChange={setLevelFilter}>
+              <SelectTrigger className="w-full sm:w-48 rounded-xl">
+                <SelectValue placeholder="All Levels" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Levels</SelectItem>
+                {programLevels.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
 
           {loading ? (
