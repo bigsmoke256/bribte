@@ -179,7 +179,7 @@ export default function AdminFeesPage() {
     const { error } = await supabase.from("payments")
       .update({ payment_status: status, approved_by: user?.id || null })
       .eq("id", p.id);
-    if (!error) { toast.success(`Payment ${status}`); fetchPayments(); }
+    if (!error) { toast.success(`Payment ${status}`); fetchPayments(); fetchBalances(); }
     else toast.error(error.message);
   };
 
