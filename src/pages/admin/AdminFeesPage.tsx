@@ -408,30 +408,49 @@ export default function AdminFeesPage() {
                     <thead>
                       <tr>
                         <th className="pl-5">Student</th><th>Reg. Number</th><th>Course</th>
-                        <th className="text-right">Fee Balance</th><th className="text-center pr-5">History</th>
+                        <th>Mode</th><th className="text-right">Tuition</th>
+                        <th className="text-right">Paid</th><th className="text-right">Balance</th>
+                        <th className="text-center">Status</th><th className="text-center pr-5">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredBalances.map((s, i) => (
-                        <motion.tr key={s.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.015 }}>
-                          <td className="pl-5">
-                            <p className="text-sm font-semibold">{s.profile?.full_name || "—"}</p>
-                            <p className="text-xs text-muted-foreground">{s.profile?.email}</p>
-                          </td>
-                          <td className="text-sm font-mono">{s.registration_number || "—"}</td>
-                          <td className="text-sm">{s.course?.course_name || "—"}</td>
-                          <td className="text-right">
-                            <span className={`font-mono text-sm font-semibold ${s.fee_balance > 0 ? "text-destructive" : "text-green-600 dark:text-green-400"}`}>
-                              UGX {s.fee_balance.toLocaleString()}
-                            </span>
-                          </td>
-                          <td className="text-center pr-5">
-                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0 rounded-lg" onClick={() => openStudentHistory(s)} title="Payment History">
-                              <Eye className="w-3.5 h-3.5" />
-                            </Button>
-                          </td>
-                        </motion.tr>
-                      ))}
+                      {filteredBalances.map((s, i) => {
+                        const isCleared = s.fee_balance <= 0;
+                        return (
+                          <motion.tr key={s.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.015 }}>
+                            <td className="pl-5">
+                              <p className="text-sm font-semibold">{s.profile?.full_name || "—"}</p>
+                              <p className="text-xs text-muted-foreground">{s.profile?.email}</p>
+                            </td>
+                            <td className="text-sm font-mono">{s.registration_number || "—"}</td>
+                            <td className="text-sm">{s.course?.course_name || "—"}</td>
+                            <td><Badge variant="outline" className="text-[10px]">{s.study_mode}</Badge></td>
+                            <td className="text-right text-sm font-mono">UGX {(s.tuition || 0).toLocaleString()}</td>
+                            <td className="text-right text-sm font-mono text-green-600 dark:text-green-400">UGX {(s.totalPaid || 0).toLocaleString()}</td>
+                            <td className="text-right">
+                              <span className={`font-mono text-sm font-semibold ${s.fee_balance > 0 ? "text-destructive" : "text-green-600 dark:text-green-400"}`}>
+                                UGX {s.fee_balance.toLocaleString()}
+                              </span>
+                            </td>
+                            <td className="text-center">
+                              {isCleared ? (
+                                <Badge className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20 text-[10px]">
+                                  <CheckCircle className="w-3 h-3 mr-1" /> Cleared
+                                </Badge>
+                              ) : (
+                                <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 text-[10px]">
+                                  <AlertTriangle className="w-3 h-3 mr-1" /> Owing
+                                </Badge>
+                              )}
+                            </td>
+                            <td className="text-center pr-5">
+                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0 rounded-lg" onClick={() => openStudentHistory(s)} title="Payment History">
+                                <Eye className="w-3.5 h-3.5" />
+                              </Button>
+                            </td>
+                          </motion.tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
