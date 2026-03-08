@@ -163,7 +163,7 @@ export default function LecturerSubmissionsPage() {
                             variant="outline" 
                             size="sm" 
                             className="h-7 gap-1.5 text-xs" 
-                            onClick={() => handleDownloadFile(s.file_url!, student?.name || "Student")}
+                            onClick={() => handleOpenFile(s.file_url!)}
                           >
                             {getFileIcon(fileType || 'file')}
                             <Download className="w-3 h-3" />
