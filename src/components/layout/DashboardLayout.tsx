@@ -28,6 +28,7 @@ const studentNav: NavItem[] = [
   { label: "Fees & Payments", icon: CreditCard, path: "/student/fees" },
   { label: "Results & GPA", icon: BarChart3, path: "/student/results" },
   { label: "Timetable", icon: Calendar, path: "/student/timetable" },
+  { label: "Schedule", icon: Video, path: "/student/schedule" },
   { label: "Announcements", icon: Bell, path: "/student/announcements" },
 ];
 
