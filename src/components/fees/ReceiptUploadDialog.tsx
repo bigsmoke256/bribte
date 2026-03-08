@@ -90,7 +90,17 @@ export function ReceiptUploadDialog({ open, onOpenChange, studentId, courseId, o
         toast.success("Payment verified and balance updated!");
       } else if (result.status === "review_required") {
         setStatus("review_required");
-        setStatusMessage("The system couldn't fully read your receipt. It has been sent to administration for manual review. You'll be notified once processed.");
+        const reviewReasons: Record<string, string> = {
+          low_confidence: "The receipt image quality is too low to verify automatically.",
+          unknown_provider: "The payment provider on the receipt is not recognized.",
+          name_partial_match: "The student name on the receipt partially matches your records.",
+          course_mismatch: "The course on the receipt doesn't match your enrollment.",
+          amount_suspicious: "The payment amount requires manual verification.",
+          extraction_failed: "The system couldn't read the receipt content.",
+          no_amount: "Could not extract a payment amount from the receipt.",
+        };
+        const detail = reviewReasons[result.reason] || "";
+        setStatusMessage(`Your receipt has been sent to administration for manual review. ${detail} You'll be notified once processed.`);
         toast.info("Receipt submitted for admin review");
       } else if (result.status === "rejected") {
         setStatus("rejected");
