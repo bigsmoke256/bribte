@@ -470,6 +470,307 @@ v1.0.0 — January 2026
    • Three dashboard portals
    • Row-Level Security on all tables`,
   },
+  {
+    id: "system-guide",
+    title: "Full System Guide",
+    description: "Complete operational guide covering all portals, workflows, database architecture, and troubleshooting.",
+    category: "compliance",
+    icon: MapIcon,
+    content: `FULL SYSTEM GUIDE — BRIBTE Digital Campus Management System
+Document ID: BRIBTE-GUIDE-001 | Version: 1.0
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. SYSTEM OVERVIEW
+
+BRIBTE Digital Campus Management System is a web-based platform for
+Buganda Royal Institute of Business and Technical Education (Kampala, Uganda).
+Designed for 10,000+ concurrent students.
+
+Tech Stack:
+   • Frontend: React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui
+   • Backend: PostgreSQL, Auth, Storage, Edge Functions, RLS
+   • AI/ML: Google Gemini 2.5 Flash via Lovable AI Gateway
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+2. USER ROLES & ACCESS
+
+Role Hierarchy:
+   Admin (Full System Access)
+     └── Lecturer (Academic Management)
+          └── Student (Self-Service Portal)
+
+Roles stored in separate user_roles table (NOT on profiles).
+Role checking via has_role() SECURITY DEFINER function.
+
+ACCESS MATRIX:
+   Feature              | Admin    | Lecturer      | Student
+   ─────────────────────┼──────────┼───────────────┼──────────────
+   Manage students      | Full CRUD| View only     | Own record
+   Manage courses       | Full CRUD| View assigned | View enrolled
+   Manage fees          | Full CRUD| —             | View own
+   Upload receipts      | —        | —             | Own only
+   Review receipts      | ✅       | —             | —
+   Create assignments   | —        | Own courses   | —
+   Submit assignments   | —        | —             | Own only
+   Grade submissions    | —        | Own courses   | —
+   Manage timetable     | Full CRUD| Own courses   | View enrolled
+   Create exams         | ✅       | Own courses   | —
+   Enter exam results   | ✅       | ✅            | —
+   View exam results    | ✅       | ✅            | Own only
+   Manage clearance     | Approve  | —             | Submit/View
+   Announcements        | Full CRUD| Own only      | View only
+   Audit logs           | View     | —             | —
+   System settings      | ✅       | —             | —
+   Academic calendar    | Full CRUD| View          | View
+   Alumni management    | Full CRUD| View          | Own record
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+3. AUTHENTICATION & REGISTRATION
+
+STUDENT SELF-REGISTRATION:
+   1. Visit /login → Click "Sign Up"
+   2. Enter: full name, email, password
+   3. Database trigger fires:
+      a. Creates profile in profiles table
+      b. Assigns 'student' role in user_roles
+      c. Creates student record (status: 'pending')
+   4. Student verifies email → can log in
+   5. Admin approves and assigns course
+
+ADMIN BOOTSTRAP:
+   First admin created via create-admin edge function.
+   Auto-confirms email. Creates: auth user + profile + admin role.
+
+LECTURER CREATION:
+   Admin Dashboard → Lecturers → Add Lecturer
+   Creates: auth user + profile + lecturer role + lecturers record
+
+SESSION: 1-hour access token, 7-day refresh, auto-refresh enabled.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+4. ADMIN PORTAL (/admin/*)
+
+4.1  Dashboard Home       — Stats, charts, recent activity
+4.2  Student Management   — Approve, assign courses, edit records
+4.3  Lecturer Management  — Add/edit lecturers, assign departments
+4.4  Course Management    — CRUD courses, modules, lessons, materials
+4.5  Fee Management       — Configure fee items (mandatory + optional)
+4.6  Receipt Review       — AI extraction results, approve/reject
+4.7  Enrollment           — Manage by academic year and semester
+4.8  Exam Management      — Create exams, view results
+4.9  Timetable            — Create entries with conflict detection
+4.10 Scheduling           — Course schedules, session generation
+4.11 Clearance            — 4-step approval workflow
+4.12 Academic Calendar    — Events, semesters, holidays
+4.13 Announcements        — System-wide or targeted
+4.14 Documents            — Course materials management
+4.15 Reports              — Enrollment, fees, attendance stats
+4.16 Alumni               — Graduate tracking
+4.17 Audit Logs           — Immutable action history
+4.18 System Settings      — Institution config, academic year
+4.19 Attendance           — Cross-course attendance records
+4.20 Records              — Academic transcripts
+4.21 Policies             — This documentation hub
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+5. LECTURER PORTAL (/lecturer/*)
+
+5.1 Dashboard     — Assigned courses, pending submissions, announcements
+5.2 My Courses    — View courses, manage materials, see enrolled students
+5.3 Assignments   — Create with deadline, instructions, file attachments
+5.4 Submissions   — Download files (all formats, 100MB max), grade + feedback
+5.5 Grades        — Enter exam results: marks, grade, grade points, remarks
+5.6 Timetable     — Personal weekly grid with room locations
+5.7 Announcements — Create for own courses, view system-wide
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+6. STUDENT PORTAL (/student/*)
+
+6.1  Dashboard      — Enrollment status, fee balance, upcoming deadlines
+6.2  My Courses     — Enrolled courses, materials, modules
+6.3  Assignments    — View, submit (all file formats, 100MB), track grades
+6.4  Fees           — Breakdown, upload receipts, payment history
+6.5  Results        — Exam scores, grades, GPA
+6.6  Timetable      — Personal weekly schedule
+6.7  Schedule       — Upcoming class sessions with status
+6.8  Announcements  — System-wide + course-specific
+6.9  Exam Card      — Generate for current semester
+6.10 Clearance      — Submit request, track 4-step progress
+6.11 Profile        — Edit personal info, change password
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+7. FEE MANAGEMENT SYSTEM
+
+FEE STRUCTURE:
+   • Tuition: Per-course, varies by study mode (Day/Evening/Weekend)
+   • Mandatory fees: Registration, library, exam fees
+   • Optional fees: Accommodation, transport (student selects)
+
+CALCULATION:
+   Total = Tuition (by mode) + Mandatory fees + Selected optional fees
+   Balance = Total - Approved payments
+
+FEE ITEMS have: frequency (once/yearly/per_semester), applies_to,
+is_optional, category.
+
+PAYMENT FLOW:
+   Upload receipt → AI processes → Auto-approve or flag →
+   Admin reviews flagged → Balance recalculated
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+8. AI RECEIPT PROCESSING (10-Step Pipeline)
+
+   1. Receive receipt image (base64)
+   2. Send to Google Gemini 2.5 Flash for OCR
+   3. Extract fields: transaction_id, amount, date, sender, institution
+   4. Validate institution name (must be BRIBTE)
+   5. Check for duplicate transaction IDs
+   6. Match sender name against student profile
+   7. Validate course/class information
+   8. Verify amount against expected fees
+   9. Calculate confidence score (0-1)
+  10. Auto-approve (≥0.8) or flag for admin review
+
+VALIDATION FLAGS:
+   • institution_mismatch — Not for BRIBTE
+   • duplicate_transaction — Already processed
+   • name_mismatch — Sender ≠ student name
+   • amount_suspicious — Doesn't match expected fees
+   • low_confidence — OCR below threshold
+   • possible_fraud — Multiple indicators
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+9. CLEARANCE WORKFLOW (4 Steps)
+
+   Step 1: Finance Office    → Verify zero fee balance
+   Step 2: Library           → Verify no outstanding items
+   Step 3: Department Head   → Confirm academic requirements
+   Step 4: Final Admin       → Issue clearance certificate
+
+Created atomically via submit_clearance_request() RPC.
+Each step: pending → approved/rejected (with notes).
+Overall: pending until all 4 approved, rejected if any rejected.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+10. TIMETABLE & SCHEDULING
+
+TWO-LAYER SYSTEM:
+   • timetable_entries — Static weekly grid (admin-managed)
+   • course_schedules — Recurring weekly slots per course
+   • class_sessions — Individual instances (generated from schedules)
+
+CONFLICT DETECTION: check_schedule_conflicts() checks lecturer,
+room, and time overlaps.
+
+SESSION GENERATION: generate_class_sessions() creates individual
+sessions for N weeks from a start date.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+11. EXAM MANAGEMENT
+
+LIFECYCLE: Created → Published → Conducted → Results entered → Finalized
+
+Properties: exam_type (midterm/final/supplementary), academic_year,
+semester, max_marks, venue, status.
+
+Results: marks_obtained, grade (letter), grade_points (GPA), remarks.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+12. ASSIGNMENT & SUBMISSION SYSTEM
+
+LECTURER creates: title, instructions, file, deadline, max_grade, course.
+STUDENT submits: any file format, max 100MB, status tracking.
+LECTURER grades: download file, enter grade + feedback.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+13. ANNOUNCEMENTS
+
+TARGETING: all | students | lecturers | specific course
+PRIORITY: low | medium | high | urgent
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+14. DATABASE ARCHITECTURE (25+ Tables)
+
+DOMAINS:
+   Identity:   profiles, user_roles
+   Academic:   departments, courses, course_modules, course_lessons,
+               course_materials, course_schedules
+   Enrollment: students, enrollments
+   Assessment: assignments, submissions, exams, exam_results
+   Finance:    fee_items, student_fee_selections, payments,
+               payment_transactions, receipt_uploads, receipt_extractions
+   Operations: timetable_entries, class_sessions, attendance,
+               clearance_requests, clearance_steps, announcements,
+               academic_calendar
+   System:     system_settings, audit_logs, alumni
+
+KEY FUNCTIONS:
+   • has_role()                    — Check user role (SECURITY DEFINER)
+   • get_user_role()               — Get primary role
+   • recalculate_fee_balance()     — Update student balance
+   • submit_clearance_request()    — Atomic clearance + 4 steps
+   • check_schedule_conflicts()    — Detect timetable conflicts
+   • generate_class_sessions()     — Batch create sessions
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+15. SECURITY ARCHITECTURE
+
+RLS on every table:
+   Admins  → Full CRUD via has_role()
+   Lecturers → Read academic + write own content
+   Students  → Read/write own records only
+
+Encryption: AES-256 at rest, TLS 1.3 in transit, bcrypt passwords.
+Audit logs: Immutable (no UPDATE/DELETE policies).
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+16. EDGE FUNCTIONS
+
+create-admin:
+   Input: { email, password, full_name, role }
+   Creates auth user + profile + admin role. Auto-confirms email.
+
+process-receipt:
+   Input: receipt upload ID
+   Runs 10-step AI validation pipeline.
+   Secrets: SUPABASE_SERVICE_ROLE_KEY, SUPABASE_URL, LOVABLE_API_KEY
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+17. TROUBLESHOOTING
+
+   Issue                    | Solution
+   ─────────────────────────┼────────────────────────────────────
+   Can't log in             | Verify email first
+   No courses visible       | Admin must approve + assign course
+   Fee balance wrong        | Run recalculate_fee_balance
+   Receipt stuck processing | Check edge function logs
+   Timetable empty          | Admin must create entries
+   Clearance has no steps   | Delete orphaned request, resubmit
+   Missing data             | Check 1000-row query limit
+   PDF won't preview        | Opens in new tab (CORS)
+   Lecturer sees no students| Verify enrollments exist
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+End of System Guide — BRIBTE Digital Campus v1.0`,
+  },
 ];
 
 export default function AdminPoliciesPage() {
