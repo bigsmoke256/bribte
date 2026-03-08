@@ -103,22 +103,41 @@ export default function AdminFeesPage() {
 
   const fetchBalances = useCallback(async () => {
     const { data: students } = await supabase.from("students")
-      .select("id, registration_number, fee_balance, user_id, course_id")
+      .select("id, registration_number, fee_balance, user_id, course_id, study_mode")
       .order("fee_balance", { ascending: false });
     if (!students) return;
     const userIds = students.map(s => s.user_id);
     const courseIds = students.map(s => s.course_id).filter(Boolean) as string[];
-    const [profilesRes, coursesRes] = await Promise.all([
+    const studentIds = students.map(s => s.id);
+    const [profilesRes, coursesRes, paymentsRes] = await Promise.all([
       supabase.from("profiles").select("user_id, full_name, email").in("user_id", userIds.length ? userIds : ["_"]),
-      courseIds.length ? supabase.from("courses").select("id, course_name, tuition_day").in("id", courseIds) : Promise.resolve({ data: [] }),
+      courseIds.length ? supabase.from("courses").select("id, course_name, course_code, tuition_day, tuition_evening, tuition_weekend").in("id", courseIds) : Promise.resolve({ data: [] }),
+      supabase.from("payments").select("student_id, amount").eq("payment_status", "approved"),
     ]);
     const profileMap = new Map((profilesRes.data || []).map(p => [p.user_id, p]));
     const courseMap = new Map((coursesRes.data || []).map((c: any) => [c.id, c]));
-    setBalances(students.map(s => ({
-      ...s,
-      profile: profileMap.get(s.user_id),
-      course: s.course_id ? courseMap.get(s.course_id) || null : null,
-    })));
+    // Sum approved payments per student
+    const paidMap = new Map<string, number>();
+    (paymentsRes.data || []).forEach((p: any) => {
+      paidMap.set(p.student_id, (paidMap.get(p.student_id) || 0) + Number(p.amount));
+    });
+    setBalances(students.map(s => {
+      const course = s.course_id ? courseMap.get(s.course_id) || null : null;
+      const mode = s.study_mode;
+      let tuition = 0;
+      if (course) {
+        if (mode === "Evening") tuition = Number(course.tuition_evening) || Number(course.tuition_day) || 0;
+        else if (mode === "Weekend") tuition = Number(course.tuition_weekend) || Number(course.tuition_day) || 0;
+        else tuition = Number(course.tuition_day) || 0;
+      }
+      return {
+        ...s,
+        profile: profileMap.get(s.user_id),
+        course,
+        totalPaid: paidMap.get(s.id) || 0,
+        tuition,
+      };
+    }));
   }, []);
 
   useEffect(() => {
