@@ -1,6 +1,6 @@
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { AnimatedCard, SectionHeader, EmptyState } from "@/components/dashboard/DashboardParts";
 import { CreditCard, Upload, CheckCircle, Clock, XCircle, Receipt, Info, FileDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -10,9 +10,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { PaymentReceipt } from "@/components/PaymentReceipt";
+import { FeeBreakdownSection } from "@/components/fees/FeeBreakdownSection";
+import { PaymentHistorySection } from "@/components/fees/PaymentHistorySection";
 
 interface FeeItem {
   id: string; name: string; amount: number; frequency: string;
@@ -25,6 +28,7 @@ export default function StudentFeesPage() {
   const [course, setCourse] = useState<any>(null);
   const [payments, setPayments] = useState<any[]>([]);
   const [feeItems, setFeeItems] = useState<FeeItem[]>([]);
+  const [selectedOptional, setSelectedOptional] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
@@ -33,23 +37,26 @@ export default function StudentFeesPage() {
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [receiptPayment, setReceiptPayment] = useState<any>(null);
 
-  useEffect(() => { if (user) loadData(); }, [user]);
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
+    if (!user) return;
     const { data: studentData } = await supabase.from("students")
-      .select("*, course:courses(*)").eq("user_id", user!.id).maybeSingle();
+      .select("*, course:courses(*)").eq("user_id", user.id).maybeSingle();
     if (!studentData) { setLoading(false); return; }
     setStudent(studentData);
     setCourse(studentData.course);
 
-    const [paymentsRes, feeItemsRes] = await Promise.all([
+    const [paymentsRes, feeItemsRes, selectionsRes] = await Promise.all([
       supabase.from("payments").select("*").eq("student_id", studentData.id).order("payment_date", { ascending: false }),
       supabase.from("fee_items").select("*").order("category", { ascending: true }),
+      supabase.from("student_fee_selections").select("fee_item_id").eq("student_id", studentData.id),
     ]);
     setPayments(paymentsRes.data || []);
     setFeeItems((feeItemsRes.data as FeeItem[]) || []);
+    setSelectedOptional(new Set((selectionsRes.data || []).map((s: any) => s.fee_item_id)));
     setLoading(false);
-  }
+  }, [user]);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   const tuition = useMemo(() => {
     if (!course || !student) return 0;
@@ -60,10 +67,14 @@ export default function StudentFeesPage() {
   }, [course, student]);
 
   const feeBreakdown = useMemo(() => {
+    if (!course || !student) return { oneTime: [], recurring: [], optional: [], oneTimeTotal: 0, recurringTotal: 0, optionalTotal: 0, applicableOneTime: false, applicableYearly: false };
+
     const isDiploma = course?.program_level?.toLowerCase().includes("diploma");
     const isSemester = ["Diploma", "National Diploma", "Higher National Diploma"].some(
       l => course?.program_level?.includes(l)
     );
+    const yearOfStudy = student.year_of_study || 1;
+    const semester = student.semester || 1;
 
     const applicable = feeItems.filter(f => {
       if (f.applies_to === "diploma_only" && !isDiploma) return false;
@@ -72,23 +83,63 @@ export default function StudentFeesPage() {
       return true;
     });
 
-    const oneTime = applicable.filter(f => f.frequency === "once");
+    const oneTime = applicable.filter(f => f.frequency === "once" && !f.is_optional);
     const recurring = applicable.filter(f => f.frequency !== "once" && !f.is_optional);
     const optional = applicable.filter(f => f.is_optional);
 
-    const oneTimeTotal = oneTime.reduce((s, f) => s + Number(f.amount), 0);
-    const recurringTotal = recurring.reduce((s, f) => s + Number(f.amount), 0);
+    // Determine which fees apply THIS semester
+    const applicableOneTime = yearOfStudy === 1 && semester === 1;
+    const applicableYearly = semester === 1;
 
-    return { oneTime, recurring, optional, oneTimeTotal, recurringTotal };
-  }, [feeItems, course]);
+    const oneTimeTotal = applicableOneTime ? oneTime.reduce((s, f) => s + Number(f.amount), 0) : 0;
+
+    const recurringTotal = recurring.reduce((s, f) => {
+      if (f.frequency === "yearly" && !applicableYearly) return s;
+      return s + Number(f.amount);
+    }, 0);
+
+    const optionalTotal = optional.reduce((s, f) => {
+      if (selectedOptional.has(f.id)) return s + Number(f.amount);
+      return s;
+    }, 0);
+
+    return { oneTime, recurring, optional, oneTimeTotal, recurringTotal, optionalTotal, applicableOneTime, applicableYearly };
+  }, [feeItems, course, student, selectedOptional]);
+
+  const grandTotal = useMemo(() => {
+    return tuition + feeBreakdown.oneTimeTotal + feeBreakdown.recurringTotal + feeBreakdown.optionalTotal;
+  }, [tuition, feeBreakdown]);
 
   const stats = useMemo(() => {
     const approved = payments.filter(p => p.payment_status === "approved");
     const totalPaid = approved.reduce((s, p) => s + Number(p.amount), 0);
     const balance = student?.fee_balance ?? 0;
-    const totalFees = totalPaid + balance;
-    return { totalPaid, totalFees, balance, percentage: totalFees > 0 ? (totalPaid / totalFees) * 100 : 0 };
-  }, [payments, student]);
+    return { totalPaid, grandTotal, balance, percentage: grandTotal > 0 ? (totalPaid / grandTotal) * 100 : 0 };
+  }, [payments, student, grandTotal]);
+
+  const toggleOptionalFee = async (feeId: string) => {
+    if (!student) return;
+    const newSet = new Set(selectedOptional);
+    try {
+      if (newSet.has(feeId)) {
+        await supabase.from("student_fee_selections").delete().eq("student_id", student.id).eq("fee_item_id", feeId);
+        newSet.delete(feeId);
+        toast.success("Optional fee removed");
+      } else {
+        await supabase.from("student_fee_selections").insert({ student_id: student.id, fee_item_id: feeId });
+        newSet.add(feeId);
+        toast.success("Optional fee added");
+      }
+      setSelectedOptional(newSet);
+      // Recalculate balance
+      await supabase.rpc("recalculate_fee_balance", { p_student_id: student.id });
+      // Refresh student data
+      const { data: updated } = await supabase.from("students").select("fee_balance").eq("id", student.id).maybeSingle();
+      if (updated) setStudent((prev: any) => ({ ...prev, fee_balance: updated.fee_balance }));
+    } catch (e: any) {
+      toast.error(e.message || "Failed to update selection");
+    }
+  };
 
   async function handleUpload() {
     if (!student || !uploadFile || !uploadAmount) return;
@@ -126,7 +177,7 @@ export default function StudentFeesPage() {
       paymentDate: p.payment_date,
       paymentStatus: p.payment_status,
       receiptNumber: `RCP-${p.id.slice(0, 8).toUpperCase()}`,
-      tuition,
+      tuition: grandTotal,
       totalPaid: totalPaidToDate,
       balance: student.fee_balance,
     };
@@ -150,7 +201,7 @@ export default function StudentFeesPage() {
           <div>
             <p className="text-sm font-semibold text-destructive">Outstanding Fee Balance: UGX {stats.balance.toLocaleString()}</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              You have paid UGX {stats.totalPaid.toLocaleString()} out of UGX {tuition.toLocaleString()}. Please clear the remaining balance to avoid penalties.
+              You have paid UGX {stats.totalPaid.toLocaleString()} out of UGX {grandTotal.toLocaleString()} (total fees this semester). Please clear the remaining balance to avoid penalties.
             </p>
           </div>
         </motion.div>
@@ -159,11 +210,11 @@ export default function StudentFeesPage() {
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <AnimatedCard delay={0}>
-          <p className="text-xs text-muted-foreground mb-1">Total Fees (Tuition)</p>
-          <p className="font-display text-2xl font-bold">UGX {tuition.toLocaleString()}</p>
-          <p className="text-xs text-muted-foreground mt-1">{student?.study_mode} session • per semester</p>
+          <p className="text-xs text-muted-foreground mb-1">Total Fees This Semester</p>
+          <p className="font-display text-2xl font-bold">UGX {grandTotal.toLocaleString()}</p>
+          <p className="text-xs text-muted-foreground mt-1">{student?.study_mode} session • Year {student?.year_of_study}, Sem {student?.semester}</p>
           <Progress value={stats.percentage} className="h-2 mt-3" />
-          <p className="text-xs text-muted-foreground mt-1">{stats.percentage.toFixed(0)}% paid</p>
+          <p className="text-xs text-muted-foreground mt-1">{Math.min(stats.percentage, 100).toFixed(0)}% paid</p>
         </AnimatedCard>
         <AnimatedCard delay={0.05}>
           <p className="text-xs text-muted-foreground mb-1">Total Paid</p>
@@ -183,120 +234,20 @@ export default function StudentFeesPage() {
       </div>
 
       {/* Fee Structure Breakdown */}
-      <AnimatedCard delay={0.12}>
-        <SectionHeader title="Fee Structure" icon={Receipt} />
-        <div className="mt-4 space-y-4">
-          {/* Tuition */}
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Tuition Fee</p>
-            <div className="flex items-center justify-between p-3 rounded-xl bg-primary/5">
-              <span className="text-sm font-medium">Tuition ({student?.study_mode || "Day"})</span>
-              <span className="font-display font-bold">UGX {tuition.toLocaleString()}</span>
-            </div>
-          </div>
-
-          {/* One-time fees */}
-          {feeBreakdown.oneTime.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">One-Time Fees</p>
-              <div className="space-y-1">
-                {feeBreakdown.oneTime.map(f => (
-                  <div key={f.id} className="flex items-center justify-between p-2.5 rounded-lg hover:bg-muted/40 transition-colors">
-                    <span className="text-sm">{f.name}</span>
-                    <span className="text-sm font-semibold">UGX {Number(f.amount).toLocaleString()}</span>
-                  </div>
-                ))}
-                <Separator />
-                <div className="flex items-center justify-between p-2.5 font-semibold">
-                  <span className="text-sm">Subtotal (One-Time)</span>
-                  <span className="text-sm">UGX {feeBreakdown.oneTimeTotal.toLocaleString()}</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Recurring fees */}
-          {feeBreakdown.recurring.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Recurring Fees</p>
-              <div className="space-y-1">
-                {feeBreakdown.recurring.map(f => (
-                  <div key={f.id} className="flex items-center justify-between p-2.5 rounded-lg hover:bg-muted/40 transition-colors">
-                    <div>
-                      <span className="text-sm">{f.name}</span>
-                      <Badge variant="secondary" className="ml-2 text-[10px] h-4">{f.frequency.replace("_", "/")}</Badge>
-                    </div>
-                    <span className="text-sm font-semibold">UGX {Number(f.amount).toLocaleString()}</span>
-                  </div>
-                ))}
-                <Separator />
-                <div className="flex items-center justify-between p-2.5 font-semibold">
-                  <span className="text-sm">Subtotal (Recurring)</span>
-                  <span className="text-sm">UGX {feeBreakdown.recurringTotal.toLocaleString()}</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Optional fees */}
-          {feeBreakdown.optional.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Optional Fees</p>
-              <div className="space-y-1">
-                {feeBreakdown.optional.map(f => (
-                  <div key={f.id} className="flex items-center justify-between p-2.5 rounded-lg hover:bg-muted/40 transition-colors">
-                    <div>
-                      <span className="text-sm">{f.name}</span>
-                      <Badge variant="outline" className="ml-2 text-[10px] h-4">Optional</Badge>
-                    </div>
-                    <span className="text-sm font-semibold text-muted-foreground">UGX {Number(f.amount).toLocaleString()}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </AnimatedCard>
+      <FeeBreakdownSection
+        tuition={tuition}
+        studyMode={student?.study_mode}
+        feeBreakdown={feeBreakdown}
+        grandTotal={grandTotal}
+        selectedOptional={selectedOptional}
+        onToggleOptional={toggleOptionalFee}
+      />
 
       {/* Payment History */}
-      <AnimatedCard delay={0.15}>
-        <SectionHeader title="Payment History" icon={CreditCard} />
-        {payments.length === 0 ? (
-          <EmptyState icon={CreditCard} title="No Payments" description="No payment records found." />
-        ) : (
-          <div className="space-y-3 mt-4">
-            {payments.map((p, i) => (
-              <motion.div key={p.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
-                className="flex items-center justify-between p-3 rounded-xl bg-muted/40 hover:bg-muted/60 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                    p.payment_status === "approved" ? "bg-success/10" : p.payment_status === "pending" ? "bg-warning/10" : "bg-destructive/10"
-                  }`}>
-                    {p.payment_status === "approved" ? <CheckCircle className="w-4 h-4 text-success" /> :
-                     p.payment_status === "pending" ? <Clock className="w-4 h-4 text-warning" /> :
-                     <XCircle className="w-4 h-4 text-destructive" />}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold">UGX {Number(p.amount).toLocaleString()}</p>
-                    <p className="text-xs text-muted-foreground">{new Date(p.payment_date).toLocaleDateString("en-UG", { year: "numeric", month: "short", day: "numeric" })}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {p.payment_status === "approved" && (
-                    <Button size="sm" variant="ghost" className="h-7 px-2 rounded-lg text-xs" onClick={() => { setReceiptPayment(p); setReceiptOpen(true); }}>
-                      <FileDown className="w-3 h-3 mr-1" /> Receipt
-                    </Button>
-                  )}
-                  {p.receipt_url && <a href={p.receipt_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">View Upload</a>}
-                  <Badge variant={p.payment_status === "approved" ? "default" : p.payment_status === "pending" ? "secondary" : "destructive"} className="text-[10px] h-5">
-                    {p.payment_status}
-                  </Badge>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        )}
-      </AnimatedCard>
+      <PaymentHistorySection
+        payments={payments}
+        onViewReceipt={(p) => { setReceiptPayment(p); setReceiptOpen(true); }}
+      />
 
       <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
         <DialogContent>
