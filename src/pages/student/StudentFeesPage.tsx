@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { PaymentReceipt } from "@/components/PaymentReceipt";
 
 interface FeeItem {
   id: string; name: string; amount: number; frequency: string;
