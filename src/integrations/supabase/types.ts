@@ -636,6 +636,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      recalculate_fee_balance: {
+        Args: { p_student_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "lecturer" | "student"
