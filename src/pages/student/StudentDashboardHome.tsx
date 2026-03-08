@@ -1,7 +1,7 @@
 import { useAuth } from "@/lib/auth-context";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { AnimatedCard, SectionHeader, EmptyState } from "@/components/dashboard/DashboardParts";
-import { CreditCard, FileText, BookOpen, Bell, Upload, AlertTriangle, GraduationCap } from "lucide-react";
+import { CreditCard, FileText, BookOpen, Bell, Upload, AlertTriangle, GraduationCap, CircleAlert } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
