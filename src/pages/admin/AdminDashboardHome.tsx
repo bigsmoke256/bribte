@@ -1,5 +1,4 @@
 import { useAuth } from "@/lib/auth-context";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { AnimatedCard, SectionHeader, EmptyState } from "@/components/dashboard/DashboardParts";
 import {
