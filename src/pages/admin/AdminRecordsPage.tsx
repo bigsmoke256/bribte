@@ -89,29 +89,27 @@ export default function AdminRecordsPage() {
   const loadStudents = async (q: string) => {
     setLoading(true);
     try {
-      // First get profiles matching search
-      let query = supabase.from("students").select(`
+      const limit = q.trim() ? 200 : 50;
+      const { data, error } = await supabase.from("students").select(`
         id, user_id, registration_number, status, study_mode, year_of_study, semester, fee_balance, admission_date, course_id, created_at,
-        profiles!students_user_id_fkey ( full_name, email, phone, avatar_url ),
         courses!students_course_id_fkey ( course_name, course_code, program_level, duration_years )
-      `).order("created_at", { ascending: false }).limit(50);
+      `).order("created_at", { ascending: false }).limit(limit);
 
-      if (q.trim()) {
-        // We'll search by reg number or fetch all and filter client-side for name
-        // Since we can't easily filter on joined table, fetch more and filter
-        query = supabase.from("students").select(`
-          id, user_id, registration_number, status, study_mode, year_of_study, semester, fee_balance, admission_date, course_id, created_at,
-          profiles!students_user_id_fkey ( full_name, email, phone, avatar_url ),
-          courses!students_course_id_fkey ( course_name, course_code, program_level, duration_years )
-        `).order("created_at", { ascending: false }).limit(200);
-      }
-
-      const { data, error } = await query;
       if (error) throw error;
+
+      // Fetch profiles separately since there's no FK between students and profiles
+      const userIds = [...new Set((data || []).map((s: any) => s.user_id))];
+      let profilesMap: Record<string, any> = {};
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase.from("profiles")
+          .select("user_id, full_name, email, phone, avatar_url")
+          .in("user_id", userIds);
+        (profiles || []).forEach((p: any) => { profilesMap[p.user_id] = p; });
+      }
 
       let results = (data || []).map((s: any) => ({
         ...s,
-        profile: Array.isArray(s.profiles) ? s.profiles[0] : s.profiles,
+        profile: profilesMap[s.user_id] || null,
         course: Array.isArray(s.courses) ? s.courses[0] : s.courses,
       }));
 
