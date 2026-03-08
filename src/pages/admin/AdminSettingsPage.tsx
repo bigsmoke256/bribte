@@ -1,5 +1,4 @@
 import { useAuth } from "@/lib/auth-context";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { AnimatedCard, SectionHeader } from "@/components/dashboard/DashboardParts";
 import { Settings, Building2, GraduationCap, CreditCard, UserCheck, Save, Loader2, RefreshCw, Shield, Eye, EyeOff, KeyRound, Lock } from "lucide-react";
 import { motion } from "framer-motion";
