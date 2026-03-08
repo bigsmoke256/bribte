@@ -34,6 +34,7 @@ export default function AdminDashboard() {
   if (path === "/admin/attendance") return <AdminAttendancePage />;
   if (path === "/admin/announcements") return <AdminAnnouncementsPage />;
   if (path === "/admin/reports") return <AdminReportsPage />;
+  if (path === "/admin/records") return <AdminRecordsPage />;
   if (path === "/admin/settings") return <AdminSettingsPage />;
   if (path === "/admin/profile") return <ProfileSettingsPage />;
 

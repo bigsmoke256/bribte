@@ -56,6 +56,7 @@ const adminNav: NavItem[] = [
   { label: "Attendance", icon: ClipboardCheck, path: "/admin/attendance" },
   { label: "Announcements", icon: Bell, path: "/admin/announcements" },
   { label: "Reports", icon: BarChart3, path: "/admin/reports" },
+  { label: "Student Records", icon: Archive, path: "/admin/records" },
   { label: "Settings", icon: Settings, path: "/admin/settings" },
 ];
 
