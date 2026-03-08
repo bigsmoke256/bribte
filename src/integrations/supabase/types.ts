@@ -105,6 +105,112 @@ export type Database = {
           },
         ]
       }
+      attendance: {
+        Row: {
+          created_at: string
+          id: string
+          session_id: string
+          status: Database["public"]["Enums"]["attendance_status"]
+          student_id: string
+          time_joined: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          session_id: string
+          status?: Database["public"]["Enums"]["attendance_status"]
+          student_id: string
+          time_joined?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          session_id?: string
+          status?: Database["public"]["Enums"]["attendance_status"]
+          student_id?: string
+          time_joined?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "class_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_sessions: {
+        Row: {
+          course_id: string
+          created_at: string
+          end_time: string
+          id: string
+          lecturer_id: string | null
+          meeting_link: string | null
+          schedule_id: string | null
+          session_date: string
+          start_time: string
+          status: Database["public"]["Enums"]["session_status"]
+          updated_at: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          end_time: string
+          id?: string
+          lecturer_id?: string | null
+          meeting_link?: string | null
+          schedule_id?: string | null
+          session_date: string
+          start_time: string
+          status?: Database["public"]["Enums"]["session_status"]
+          updated_at?: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          end_time?: string
+          id?: string
+          lecturer_id?: string | null
+          meeting_link?: string | null
+          schedule_id?: string | null
+          session_date?: string
+          start_time?: string
+          status?: Database["public"]["Enums"]["session_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_sessions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_sessions_lecturer_id_fkey"
+            columns: ["lecturer_id"]
+            isOneToOne: false
+            referencedRelation: "lecturers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_sessions_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "course_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_lessons: {
         Row: {
           content: string | null
@@ -215,6 +321,57 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_schedules: {
+        Row: {
+          course_id: string
+          created_at: string
+          day_of_week: number
+          end_time: string
+          id: string
+          lecturer_id: string | null
+          meeting_link_or_room: string | null
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          lecturer_id?: string | null
+          meeting_link_or_room?: string | null
+          start_time: string
+          updated_at?: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          lecturer_id?: string | null
+          meeting_link_or_room?: string | null
+          start_time?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_schedules_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_schedules_lecturer_id_fkey"
+            columns: ["lecturer_id"]
+            isOneToOne: false
+            referencedRelation: "lecturers"
             referencedColumns: ["id"]
           },
         ]
@@ -761,6 +918,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_schedule_conflicts: {
+        Args: {
+          p_course_id: string
+          p_day_of_week: number
+          p_end_time: string
+          p_exclude_id?: string
+          p_lecturer_id?: string
+          p_meeting_room?: string
+          p_start_time: string
+        }
+        Returns: {
+          conflict_details: string
+          conflict_type: string
+        }[]
+      }
+      generate_class_sessions: {
+        Args: { p_course_id: string; p_start_date: string; p_weeks?: number }
+        Returns: number
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -779,6 +955,8 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "lecturer" | "student"
+      attendance_status: "present" | "absent" | "late"
+      session_status: "scheduled" | "live" | "completed" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -907,6 +1085,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "lecturer", "student"],
+      attendance_status: ["present", "absent", "late"],
+      session_status: ["scheduled", "live", "completed", "cancelled"],
     },
   },
 } as const

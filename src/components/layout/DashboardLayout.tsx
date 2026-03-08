@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, BookOpen, FileText, CreditCard, Calendar, Bell, Users,
   BarChart3, Settings, LogOut, Menu, GraduationCap, Upload, ClipboardList,
-  CheckCircle, MessageSquare, ChevronDown, Search, PanelLeftClose, PanelLeft, UserCog
+  CheckCircle, MessageSquare, ChevronDown, Search, PanelLeftClose, PanelLeft, UserCog, Video, ClipboardCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,7 @@ const studentNav: NavItem[] = [
   { label: "Fees & Payments", icon: CreditCard, path: "/student/fees" },
   { label: "Results & GPA", icon: BarChart3, path: "/student/results" },
   { label: "Timetable", icon: Calendar, path: "/student/timetable" },
+  { label: "Schedule", icon: Video, path: "/student/schedule" },
   { label: "Announcements", icon: Bell, path: "/student/announcements" },
 ];
 
@@ -49,6 +50,8 @@ const adminNav: NavItem[] = [
   { label: "Fee Management", icon: CreditCard, path: "/admin/fees" },
   { label: "Enrollment", icon: GraduationCap, path: "/admin/enrollment" },
   { label: "Timetable", icon: Calendar, path: "/admin/timetable" },
+  { label: "Scheduling", icon: Video, path: "/admin/scheduling" },
+  { label: "Attendance", icon: ClipboardCheck, path: "/admin/attendance" },
   { label: "Announcements", icon: Bell, path: "/admin/announcements" },
   { label: "Reports", icon: BarChart3, path: "/admin/reports" },
   { label: "Settings", icon: Settings, path: "/admin/settings" },
