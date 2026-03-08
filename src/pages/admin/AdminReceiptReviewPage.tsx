@@ -50,33 +50,70 @@ export default function AdminReceiptReviewPage() {
 
   const fetchReceipts = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
+
+    // Fetch from receipt_uploads
+    const { data: uploadData } = await supabase
       .from("receipt_uploads")
       .select("*")
       .order("uploaded_at", { ascending: false });
 
-    if (!data) { setLoading(false); return; }
+    // Also fetch payments with receipt_url (manually added payments)
+    const { data: paymentData } = await supabase
+      .from("payments")
+      .select("*, student:students(id, registration_number, user_id, fee_balance, course_id)")
+      .not("receipt_url", "is", null)
+      .order("created_at", { ascending: false });
 
-    // Enrich with student, profile, course, extraction
+    // Convert payments to ReceiptRow format for unified display
+    const paymentReceipts: ReceiptRow[] = (paymentData || []).map(p => ({
+      id: `payment-${p.id}`,
+      student_id: p.student_id,
+      course_id: p.student?.course_id || null,
+      file_url: p.receipt_url!,
+      file_hash: null,
+      status: p.payment_status === "approved" ? "verified" : p.payment_status === "rejected" ? "rejected" : "review_required",
+      uploaded_at: p.payment_date || p.created_at,
+      review_notes: p.notes,
+      student: p.student ? { registration_number: p.student.registration_number, user_id: p.student.user_id, fee_balance: p.student.fee_balance } : undefined,
+      extraction: {
+        amount: p.amount,
+        transaction_id: null,
+        payment_date: p.payment_date,
+        sender_name: null,
+        payment_provider: null,
+        confidence_score: null,
+        raw_text: null,
+      },
+    }));
+
+    const data = uploadData || [];
+
+    // Enrich receipt_uploads with student, profile, course, extraction
     const studentIds = [...new Set(data.map(r => r.student_id))];
     const courseIds = [...new Set(data.map(r => r.course_id).filter(Boolean))] as string[];
     const receiptIds = data.map(r => r.id);
 
     const [studentsRes, coursesRes, extractionsRes] = await Promise.all([
-      supabase.from("students").select("id, registration_number, user_id, fee_balance").in("id", studentIds.length ? studentIds : ["_"]),
+      studentIds.length ? supabase.from("students").select("id, registration_number, user_id, fee_balance").in("id", studentIds) : Promise.resolve({ data: [] }),
       courseIds.length ? supabase.from("courses").select("id, course_name, course_code").in("id", courseIds) : Promise.resolve({ data: [] }),
-      supabase.from("receipt_extractions").select("*").in("receipt_id", receiptIds.length ? receiptIds : ["_"]),
+      receiptIds.length ? supabase.from("receipt_extractions").select("*").in("receipt_id", receiptIds) : Promise.resolve({ data: [] }),
     ]);
 
     const studentMap = new Map((studentsRes.data || []).map(s => [s.id, s]));
     const courseMap = new Map((coursesRes.data || []).map((c: any) => [c.id, c]));
     const extractionMap = new Map((extractionsRes.data || []).map((e: any) => [e.receipt_id, e]));
 
-    const userIds = [...new Set((studentsRes.data || []).map(s => s.user_id))];
-    const { data: profiles } = await supabase.from("profiles").select("user_id, full_name, email").in("user_id", userIds.length ? userIds : ["_"]);
+    // Get all user IDs for profiles (from both sources)
+    const uploadUserIds = (studentsRes.data || []).map(s => s.user_id);
+    const paymentUserIds = paymentReceipts.map(r => r.student?.user_id).filter(Boolean) as string[];
+    const allUserIds = [...new Set([...uploadUserIds, ...paymentUserIds])];
+    
+    const { data: profiles } = allUserIds.length 
+      ? await supabase.from("profiles").select("user_id, full_name, email").in("user_id", allUserIds)
+      : { data: [] };
     const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
 
-    const enriched: ReceiptRow[] = data.map(r => {
+    const enrichedUploads: ReceiptRow[] = data.map(r => {
       const student = studentMap.get(r.student_id);
       return {
         ...r,
@@ -87,7 +124,17 @@ export default function AdminReceiptReviewPage() {
       };
     });
 
-    setReceipts(enriched);
+    // Enrich payment receipts with profiles
+    const enrichedPayments = paymentReceipts.map(r => ({
+      ...r,
+      profile: r.student ? profileMap.get(r.student.user_id) : undefined,
+    }));
+
+    // Merge, avoiding duplicates (receipt_uploads take priority)
+    const uploadFileUrls = new Set(enrichedUploads.map(r => r.file_url));
+    const uniquePayments = enrichedPayments.filter(r => !uploadFileUrls.has(r.file_url));
+
+    setReceipts([...enrichedUploads, ...uniquePayments]);
     setLoading(false);
   }, []);
 
