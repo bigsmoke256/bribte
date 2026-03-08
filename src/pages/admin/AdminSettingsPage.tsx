@@ -1,9 +1,9 @@
 import { useAuth } from "@/lib/auth-context";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { AnimatedCard, SectionHeader } from "@/components/dashboard/DashboardParts";
-import { Settings, Building2, GraduationCap, CreditCard, UserCheck, Save, Loader2, RefreshCw } from "lucide-react";
+import { Settings, Building2, GraduationCap, CreditCard, UserCheck, Save, Loader2, RefreshCw, Shield, Eye, EyeOff, KeyRound, Lock } from "lucide-react";
 import { motion } from "framer-motion";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 
 interface SettingRow {
@@ -27,6 +28,15 @@ export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState<Record<string, string>>({});
+
+  // Security / password state
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
 
   const fetchSettings = async () => {
     setLoading(true);
@@ -60,6 +70,48 @@ export default function AdminSettingsPage() {
     setSaving(false);
   };
 
+  const handleChangePassword = async () => {
+    if (!newPassword || !confirmPassword) {
+      toast({ title: "Error", description: "Please fill in all password fields.", variant: "destructive" });
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast({ title: "Error", description: "New password must be at least 6 characters.", variant: "destructive" });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast({ title: "Error", description: "New passwords do not match.", variant: "destructive" });
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      // Re-authenticate with current password first
+      if (currentPassword) {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: user?.email || "",
+          password: currentPassword,
+        });
+        if (signInError) {
+          toast({ title: "Error", description: "Current password is incorrect.", variant: "destructive" });
+          setChangingPassword(false);
+          return;
+        }
+      }
+
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+
+      toast({ title: "Password updated", description: "Your password has been changed successfully." });
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message || "Failed to update password.", variant: "destructive" });
+    }
+    setChangingPassword(false);
+  };
+
   if (!user) return null;
 
   const Field = ({ label, settingKey, placeholder, type = "text" }: { label: string; settingKey: string; placeholder?: string; type?: string }) => (
@@ -85,6 +137,27 @@ export default function AdminSettingsPage() {
         checked={getValue(settingKey) === "true"}
         onCheckedChange={checked => setValue(settingKey, checked ? "true" : "false")}
       />
+    </div>
+  );
+
+  const PasswordInput = ({ label, value, onChange, show, onToggleShow, placeholder }: {
+    label: string; value: string; onChange: (v: string) => void; show: boolean; onToggleShow: () => void; placeholder?: string;
+  }) => (
+    <div className="space-y-1.5">
+      <Label className="text-xs font-medium text-muted-foreground">{label}</Label>
+      <div className="relative">
+        <Input
+          type={show ? "text" : "password"}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="h-10 pr-10"
+        />
+        <button type="button" onClick={onToggleShow}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+          {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+        </button>
+      </div>
     </div>
   );
 
@@ -118,6 +191,7 @@ export default function AdminSettingsPage() {
               <TabsTrigger value="academic" className="gap-1.5"><GraduationCap className="w-3.5 h-3.5" /> Academic</TabsTrigger>
               <TabsTrigger value="fees" className="gap-1.5"><CreditCard className="w-3.5 h-3.5" /> Fees</TabsTrigger>
               <TabsTrigger value="enrollment" className="gap-1.5"><UserCheck className="w-3.5 h-3.5" /> Enrollment</TabsTrigger>
+              <TabsTrigger value="security" className="gap-1.5"><Shield className="w-3.5 h-3.5" /> Security</TabsTrigger>
             </TabsList>
 
             <TabsContent value="general">
@@ -163,6 +237,7 @@ export default function AdminSettingsPage() {
                     <Select value={getValue("currency")} onValueChange={v => setValue("currency", v)}>
                       <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="UGX">UGX - Ugandan Shilling</SelectItem>
                         <SelectItem value="KES">KES - Kenyan Shilling</SelectItem>
                         <SelectItem value="USD">USD - US Dollar</SelectItem>
                         <SelectItem value="GBP">GBP - British Pound</SelectItem>
@@ -192,6 +267,67 @@ export default function AdminSettingsPage() {
                   description="Enrollments are approved instantly without admin review"
                   settingKey="auto_approve_enrollment"
                 />
+              </AnimatedCard>
+            </TabsContent>
+
+            {/* Security Tab */}
+            <TabsContent value="security" className="space-y-4">
+              <AnimatedCard>
+                <SectionHeader title="Change Password" icon={KeyRound} />
+                <p className="text-xs text-muted-foreground mb-4">Update your admin account password. Use a strong password with at least 6 characters.</p>
+                <div className="max-w-md space-y-4">
+                  <PasswordInput
+                    label="Current Password"
+                    value={currentPassword}
+                    onChange={setCurrentPassword}
+                    show={showCurrent}
+                    onToggleShow={() => setShowCurrent(!showCurrent)}
+                    placeholder="Enter your current password"
+                  />
+                  <Separator />
+                  <PasswordInput
+                    label="New Password"
+                    value={newPassword}
+                    onChange={setNewPassword}
+                    show={showNew}
+                    onToggleShow={() => setShowNew(!showNew)}
+                    placeholder="Enter new password (min 6 chars)"
+                  />
+                  <PasswordInput
+                    label="Confirm New Password"
+                    value={confirmPassword}
+                    onChange={setConfirmPassword}
+                    show={showConfirm}
+                    onToggleShow={() => setShowConfirm(!showConfirm)}
+                    placeholder="Re-enter new password"
+                  />
+                  {newPassword && confirmPassword && newPassword !== confirmPassword && (
+                    <p className="text-xs text-destructive">Passwords do not match</p>
+                  )}
+                  <Button onClick={handleChangePassword} disabled={changingPassword || !currentPassword || !newPassword || !confirmPassword || newPassword !== confirmPassword}
+                    className="w-full sm:w-auto">
+                    {changingPassword ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Lock className="w-4 h-4 mr-2" />}
+                    {changingPassword ? "Updating..." : "Update Password"}
+                  </Button>
+                </div>
+              </AnimatedCard>
+
+              <AnimatedCard>
+                <SectionHeader title="Account Information" icon={Shield} />
+                <div className="space-y-3 max-w-md">
+                  <div>
+                    <Label className="text-xs font-medium text-muted-foreground">Email Address</Label>
+                    <p className="text-sm font-medium mt-0.5">{user?.email || "—"}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium text-muted-foreground">Full Name</Label>
+                    <p className="text-sm font-medium mt-0.5">{user?.fullName || "—"}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium text-muted-foreground">Role</Label>
+                    <p className="text-sm font-medium mt-0.5 capitalize">{user?.role || "—"}</p>
+                  </div>
+                </div>
               </AnimatedCard>
             </TabsContent>
           </Tabs>
