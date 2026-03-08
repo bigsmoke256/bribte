@@ -311,13 +311,8 @@ Return ONLY the JSON, no markdown, no explanation.`,
     validationFlags.institution_valid = isValidInstitution;
 
     if (!isValidInstitution) {
-      await supabase.from("receipt_uploads").update({
-        status: "rejected",
-        review_notes: `Receipt rejected: Institution "${extracted.institution_name}" does not match BUGANDA ROYAL INSTITUTE / BRIBTE. This receipt is not for this institution.`,
-      }).eq("id", receipt_id);
-      await supabase.from("receipt_extractions").update({ validation_flags: validationFlags })
-        .eq("receipt_id", receipt_id);
-      return jsonResponse({ status: "rejected", reason: "wrong_institution" });
+      const notes = `Receipt rejected: Institution "${extracted.institution_name}" does not match BUGANDA ROYAL INSTITUTE / BRIBTE.`;
+      return await rejectWithAlert("wrong_institution", notes);
     }
 
     // CHECK 3: OCR confidence
