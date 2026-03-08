@@ -121,8 +121,8 @@ function ReceiptContent({ data, crestSrc }: { data: ReceiptData; crestSrc: strin
             <img src={crestSrc} alt="BRIBTE Crest" className="crest" />
             <div className="header-text">
               <h1>Buganda Royal Institute<br />of Business & Technical Education</h1>
-              <div className="motto">Excellence Through Knowledge</div>
-              <div className="address">P.O. Box 7166, Kampala, Uganda • Tel: +256-XXX-XXXXXX • info@bribte.ac.ug</div>
+              <div className="motto">Education Is The Best Investment</div>
+              <div className="address">P.O. Box 7166, Kampala, Uganda • Tel: 0701689440 • bribtemengo@yahoo.com</div>
             </div>
           </div>
 
