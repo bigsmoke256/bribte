@@ -319,6 +319,15 @@ export default function AdminCoursesPage() {
                 <SelectItem value="draft">Draft</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={modeFilter} onValueChange={setModeFilter}>
+              <SelectTrigger className="w-full sm:w-44 rounded-xl"><SelectValue placeholder="Study Mode" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Modes</SelectItem>
+                <SelectItem value="day">Day</SelectItem>
+                <SelectItem value="evening">Evening</SelectItem>
+                <SelectItem value="weekend">Weekend</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Table */}
