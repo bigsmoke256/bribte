@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { PaymentReceipt } from "@/components/PaymentReceipt";
 import { FeeBreakdownSection } from "@/components/fees/FeeBreakdownSection";
 import { PaymentHistorySection } from "@/components/fees/PaymentHistorySection";
+import { ReceiptUploadDialog } from "@/components/fees/ReceiptUploadDialog";
 
 interface FeeItem {
   id: string; name: string; amount: number; frequency: string;
