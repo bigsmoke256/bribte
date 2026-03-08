@@ -41,12 +41,15 @@ export default function AdminLecturersPage() {
     setLoading(true);
     const { data } = await supabase
       .from("lecturers")
-      .select("*, profile:profiles!lecturers_user_id_fkey(full_name, email, phone), department:departments!lecturers_department_id_fkey(name)")
+      .select("*, department:departments(name)")
       .order("created_at", { ascending: false });
     if (data) {
+      const userIds = data.map((l: any) => l.user_id);
+      const { data: profilesData } = await supabase.from("profiles").select("user_id, full_name, email, phone").in("user_id", userIds);
+      const profileMap = new Map((profilesData || []).map(p => [p.user_id, p]));
       setLecturers(data.map((l: any) => ({
         ...l,
-        profile: Array.isArray(l.profile) ? l.profile[0] : l.profile,
+        profile: profileMap.get(l.user_id) || null,
         department: Array.isArray(l.department) ? l.department[0] : l.department,
       })));
     }

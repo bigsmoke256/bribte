@@ -56,8 +56,13 @@ export default function AdminEnrollmentPage() {
 
   useEffect(() => {
     fetchData();
-    supabase.from("students").select("id, registration_number, profile:profiles!students_user_id_fkey(full_name)").then(({ data }) => {
-      if (data) setStudents(data.map((s: any) => ({ ...s, profile: Array.isArray(s.profile) ? s.profile[0] : s.profile })));
+    supabase.from("students").select("id, registration_number, user_id").then(async ({ data }) => {
+      if (data) {
+        const uids = data.map(s => s.user_id);
+        const { data: profs } = await supabase.from("profiles").select("user_id, full_name").in("user_id", uids);
+        const pm = new Map((profs || []).map(p => [p.user_id, p]));
+        setStudents(data.map(s => ({ ...s, profile: pm.get(s.user_id) || null })));
+      }
     });
     supabase.from("courses").select("id, course_name, course_code").order("course_code").then(({ data }) => { if (data) setCourses(data); });
   }, []);

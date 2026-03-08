@@ -22,7 +22,7 @@ export default function AdminDashboardHome() {
         supabase.from("lecturers").select("id", { count: "exact", head: true }),
         supabase.from("courses").select("id", { count: "exact", head: true }),
         supabase.from("enrollments").select("id", { count: "exact", head: true }),
-        supabase.from("payments").select("*, student:students!payments_student_id_fkey(registration_number, profile:profiles!students_user_id_fkey(full_name))").order("created_at", { ascending: false }).limit(5),
+        supabase.from("payments").select("*, student:students(registration_number, user_id)").order("created_at", { ascending: false }).limit(5),
         supabase.from("announcements").select("*").order("created_at", { ascending: false }).limit(4),
       ]);
 

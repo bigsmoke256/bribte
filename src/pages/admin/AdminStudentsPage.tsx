@@ -54,16 +54,23 @@ export default function AdminStudentsPage() {
 
   const fetchStudents = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data: studentsData } = await supabase
       .from("students")
-      .select("*, profile:profiles!students_user_id_fkey(full_name, email, phone), course:courses!students_course_id_fkey(course_name, course_code)")
+      .select("*, course:courses(course_name, course_code)")
       .order("created_at", { ascending: false });
 
-    if (!error && data) {
-      // Map the joined data - profile comes as array, take first
-      setStudents(data.map((s: any) => ({
+    if (studentsData) {
+      // Fetch profiles for all student user_ids
+      const userIds = studentsData.map((s: any) => s.user_id);
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, email, phone")
+        .in("user_id", userIds);
+
+      const profileMap = new Map((profilesData || []).map(p => [p.user_id, p]));
+      setStudents(studentsData.map((s: any) => ({
         ...s,
-        profile: Array.isArray(s.profile) ? s.profile[0] : s.profile,
+        profile: profileMap.get(s.user_id) || null,
         course: Array.isArray(s.course) ? s.course[0] : s.course,
       })));
     }

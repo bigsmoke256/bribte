@@ -34,14 +34,18 @@ export default function AdminFeesPage() {
     setLoading(true);
     const { data } = await supabase
       .from("payments")
-      .select("*, student:students!payments_student_id_fkey(registration_number, profile:profiles!students_user_id_fkey(full_name, email))")
+      .select("*, student:students(registration_number, user_id)")
       .order("created_at", { ascending: false });
     if (data) {
+      const userIds = data.map((p: any) => {
+        const student = Array.isArray(p.student) ? p.student[0] : p.student;
+        return student?.user_id;
+      }).filter(Boolean);
+      const { data: profilesData } = await supabase.from("profiles").select("user_id, full_name, email").in("user_id", userIds);
+      const profileMap = new Map((profilesData || []).map(pr => [pr.user_id, pr]));
       setPayments(data.map((p: any) => {
         const student = Array.isArray(p.student) ? p.student[0] : p.student;
-        if (student) {
-          student.profile = Array.isArray(student.profile) ? student.profile[0] : student.profile;
-        }
+        if (student) student.profile = profileMap.get(student.user_id) || null;
         return { ...p, student };
       }));
     }
