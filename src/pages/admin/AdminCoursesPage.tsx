@@ -66,6 +66,7 @@ export default function AdminCoursesPage() {
   const [search, setSearch] = useState("");
   const [levelFilter, setLevelFilter] = useState("all");
   const [pubFilter, setPubFilter] = useState("all");
+  const [modeFilter, setModeFilter] = useState("all");
 
   // Form dialog
   const [dialog, setDialog] = useState(false);
