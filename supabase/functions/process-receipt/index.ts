@@ -93,11 +93,17 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 3. Fetch file and convert to base64
+    // 3. Fetch file and convert to base64 (chunked to avoid stack overflow)
     const fileResp = await fetch(receipt.file_url);
     if (!fileResp.ok) throw new Error("Failed to fetch receipt file");
     const fileBuffer = await fileResp.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(fileBuffer)));
+    const bytes = new Uint8Array(fileBuffer);
+    let binary = "";
+    const chunkSize = 8192;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+    }
+    const base64 = btoa(binary);
     const contentType = fileResp.headers.get("content-type") || "image/jpeg";
     const mediaType = contentType.includes("pdf") ? "application/pdf" : contentType;
 
