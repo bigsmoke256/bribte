@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { FileText, Download, Eye, ChevronRight, Shield, BookOpen, Server, Database, Users, Receipt, Clock, HelpCircle, Folder } from "lucide-react";
+import { FileText, Download, Eye, ChevronRight, Shield, BookOpen, Server, Database, Users, Receipt, Clock, HelpCircle, Folder, MapIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
