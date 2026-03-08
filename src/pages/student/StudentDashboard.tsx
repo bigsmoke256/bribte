@@ -8,6 +8,7 @@ import StudentResultsPage from "./StudentResultsPage";
 import StudentTimetablePage from "./StudentTimetablePage";
 import StudentSchedulePage from "./StudentSchedulePage";
 import StudentAnnouncementsPage from "./StudentAnnouncementsPage";
+import StudentExamCardPage from "./StudentExamCardPage";
 import ProfileSettingsPage from "../shared/ProfileSettingsPage";
 
 export default function StudentDashboard() {
