@@ -100,41 +100,11 @@ export default function LecturerSubmissionsPage() {
     return labels[type] || 'File';
   };
 
-  const handleDownloadFile = async (filePath: string, studentName: string) => {
+  const handleOpenFile = (filePath: string) => {
     if (!filePath) return;
-    
-    // If it's already a full URL (legacy), just open it
-    if (filePath.startsWith('http')) {
-      window.open(filePath, '_blank');
-      return;
-    }
-
-    try {
-      toast.loading("Preparing download...");
-      
-      const { data, error } = await supabase.storage
-        .from("submissions")
-        .download(filePath);
-
-      if (error) throw error;
-      
-      // Create download link
-      const url = URL.createObjectURL(data);
-      const a = document.createElement('a');
-      a.href = url;
-      const ext = filePath.split('.').pop() || 'file';
-      a.download = `${studentName.replace(/\s+/g, '_')}_submission.${ext}`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      
-      toast.dismiss();
-      toast.success("File downloaded! It will open in your default app.");
-    } catch (err: any) {
-      toast.dismiss();
-      toast.error("Failed to download: " + err.message);
-    }
+    // Open the file URL directly - browser will download or open based on file type
+    window.open(filePath, '_blank');
+    toast.success("File opened! It will download or play in your browser.");
   };
 
   return (
@@ -193,7 +163,7 @@ export default function LecturerSubmissionsPage() {
                             variant="outline" 
                             size="sm" 
                             className="h-7 gap-1.5 text-xs" 
-                            onClick={() => handleDownloadFile(s.file_url!, student?.name || "Student")}
+                            onClick={() => handleOpenFile(s.file_url!)}
                           >
                             {getFileIcon(fileType || 'file')}
                             <Download className="w-3 h-3" />
