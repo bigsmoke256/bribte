@@ -69,23 +69,6 @@ export default function StudentDashboardHome() {
 
   const pendingAssignments = assignmentList.filter(a => a.effectiveStatus === "pending" || a.effectiveStatus === "submitted");
 
-  async function handleUploadReceipt() {
-    if (!student || !uploadFile || !uploadAmount) return;
-    setUploading(true);
-    try {
-      const ext = uploadFile.name.split(".").pop();
-      const path = `${student.id}/${Date.now()}.${ext}`;
-      const { error: ue } = await supabase.storage.from("receipts").upload(path, uploadFile);
-      if (ue) throw ue;
-      const { data: u } = supabase.storage.from("receipts").getPublicUrl(path);
-      const { error: ie } = await supabase.from("payments").insert({ student_id: student.id, amount: parseFloat(uploadAmount), receipt_url: u.publicUrl, payment_status: "pending" });
-      if (ie) throw ie;
-      toast.success("Receipt uploaded! Awaiting approval.");
-      setUploadOpen(false); setUploadFile(null); setUploadAmount("");
-      loadData();
-    } catch (e: any) { toast.error(e.message || "Upload failed"); }
-    finally { setUploading(false); }
-  }
 
   if (!user) return null;
   const displayName = user.fullName || user.email;
