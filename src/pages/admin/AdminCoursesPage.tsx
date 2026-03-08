@@ -341,8 +341,8 @@ export default function AdminCoursesPage() {
                 <thead>
                   <tr>
                     <th className="pl-5">Code</th><th>Name</th><th>Level</th><th>Department</th>
-                    <th>Lecturer</th><th className="text-center">Duration</th><th className="text-center">Status</th>
-                    <th className="text-right">Tuition (Day)</th><th className="text-center pr-5">Actions</th>
+                    <th className="text-center">Duration</th><th className="text-center">Status</th>
+                    <th className="text-right">Day</th><th className="text-right">Evening</th><th className="text-right">Weekend</th><th className="text-center pr-5">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
