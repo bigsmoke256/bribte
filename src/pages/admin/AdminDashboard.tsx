@@ -13,6 +13,7 @@ import AdminAnnouncementsPage from "./AdminAnnouncementsPage";
 import AdminReportsPage from "./AdminReportsPage";
 import AdminSettingsPage from "./AdminSettingsPage";
 import AdminReceiptReviewPage from "./AdminReceiptReviewPage";
+import AdminRecordsPage from "./AdminRecordsPage";
 import ProfileSettingsPage from "../shared/ProfileSettingsPage";
 
 export default function AdminDashboard() {
