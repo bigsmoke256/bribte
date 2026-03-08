@@ -34,6 +34,37 @@ function jsonResponse(data: any, status = 200) {
   });
 }
 
+async function notifyAdminsOfRejection(
+  supabase: any,
+  studentName: string,
+  regNumber: string | null,
+  reason: string,
+  details: string,
+  receiptId: string,
+) {
+  try {
+    // Get an admin user_id to use as author
+    const { data: adminRole } = await supabase
+      .from("user_roles")
+      .select("user_id")
+      .eq("role", "admin")
+      .limit(1)
+      .single();
+    
+    if (!adminRole) return;
+
+    await supabase.from("announcements").insert({
+      author_id: adminRole.user_id,
+      title: `⚠️ Receipt Rejected: ${studentName || "Unknown Student"}`,
+      message: `A receipt from ${studentName || "Unknown"} (${regNumber || "No Reg#"}) was automatically rejected.\n\nReason: ${reason}\nDetails: ${details}\n\nReceipt ID: ${receiptId}`,
+      priority: "urgent",
+      target_group: "admin",
+    });
+  } catch (e) {
+    console.error("Failed to notify admins:", e);
+  }
+}
+
 function normalizeString(s: string | null | undefined): string {
   return (s || "").toLowerCase().replace(/[^a-z0-9\s]/g, "").trim();
 }
