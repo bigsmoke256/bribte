@@ -13,6 +13,7 @@ import AdminAnnouncementsPage from "./AdminAnnouncementsPage";
 import AdminReportsPage from "./AdminReportsPage";
 import AdminSettingsPage from "./AdminSettingsPage";
 import AdminReceiptReviewPage from "./AdminReceiptReviewPage";
+import ProfileSettingsPage from "../shared/ProfileSettingsPage";
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -33,6 +34,7 @@ export default function AdminDashboard() {
   if (path === "/admin/announcements") return <AdminAnnouncementsPage />;
   if (path === "/admin/reports") return <AdminReportsPage />;
   if (path === "/admin/settings") return <AdminSettingsPage />;
+  if (path === "/admin/profile") return <ProfileSettingsPage />;
 
   return <AdminDashboardHome />;
 }
