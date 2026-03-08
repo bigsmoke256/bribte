@@ -191,7 +191,7 @@ export default function StudentFeesPage() {
           <h1 className="font-display text-2xl font-bold">Fees & Payments</h1>
           <p className="text-sm text-muted-foreground mt-1">Track your tuition and fee payments</p>
         </div>
-        <Button onClick={() => setUploadOpen(true)}><Upload className="w-4 h-4 mr-2" /> Upload Receipt</Button>
+        <Button onClick={() => setUploadOpen(true)}><Upload className="w-4 h-4 mr-2" /> Upload Receipt (AI Verified)</Button>
       </div>
 
       {/* Balance Alert */}
