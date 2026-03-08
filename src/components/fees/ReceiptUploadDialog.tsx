@@ -139,7 +139,7 @@ export function ReceiptUploadDialog({ open, onOpenChange, studentId, courseId, o
                   onChange={e => setFile(e.target.files?.[0] || null)} className="mt-1" />
               </div>
               <p className="text-xs text-muted-foreground">
-                Our AI will automatically extract the payment amount, transaction ID, and other details from your receipt.
+                The system will automatically extract the payment amount, transaction ID, and other details from your receipt.
               </p>
             </motion.div>
           ) : (
