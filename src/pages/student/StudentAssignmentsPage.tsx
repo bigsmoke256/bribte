@@ -77,12 +77,11 @@ export default function StudentAssignmentsPage() {
 
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage.from("submissions").getPublicUrl(filePath);
-
+      // Store just the file path, not the full URL (bucket is private)
       const { error: insertError } = await supabase.from("submissions").insert({
         assignment_id: selectedAssignment.id,
         student_id: studentId,
-        file_url: urlData.publicUrl,
+        file_url: filePath,
         status: "submitted",
         submitted_at: new Date().toISOString(),
       });
