@@ -221,7 +221,7 @@ export default function AdminSchedulingPage() {
 
   // Update session status
   const updateSessionMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+    mutationFn: async ({ id, status }: { id: string; status: "scheduled" | "live" | "completed" | "cancelled" }) => {
       const { error } = await supabase.from("class_sessions").update({ status }).eq("id", id);
       if (error) throw error;
     },
