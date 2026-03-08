@@ -250,6 +250,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-2.5 py-1.5 px-2 rounded-xl hover:bg-muted transition-colors">
                   <Avatar className="w-8 h-8 ring-2 ring-primary/20">
+                    {user.avatarUrl && <AvatarImage src={user.avatarUrl} alt={user.fullName} />}
                     <AvatarFallback className="bg-primary text-primary-foreground text-xs font-bold">{initials}</AvatarFallback>
                   </Avatar>
                   <div className="hidden sm:block text-left">
