@@ -510,6 +510,6 @@ export default function AdminTimetablePage() {
           </DialogContent>
         </Dialog>
       </div>
-    </DashboardLayout>
+      </div>
   );
 }

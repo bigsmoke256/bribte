@@ -252,6 +252,5 @@ export default function AdminAttendancePage() {
         )}
       </AnimatedCard>
     </div>
-    </DashboardLayout>
   );
 }
