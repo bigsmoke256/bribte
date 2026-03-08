@@ -38,6 +38,7 @@ export default function AdminCoursesPage() {
   const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [levelFilter, setLevelFilter] = useState("all");
   const [dialog, setDialog] = useState(false);
   const [editing, setEditing] = useState<CourseRow | null>(null);
   const [form, setForm] = useState(emptyForm);
