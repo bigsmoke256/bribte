@@ -60,9 +60,12 @@ export default function StudentAssignmentsPage() {
     }));
   }, [assignments, submissions]);
 
-  const pending = assignmentList.filter(a => a.effectiveStatus === "pending" || a.effectiveStatus === "overdue");
-  const submitted = assignmentList.filter(a => a.effectiveStatus === "submitted");
-  const graded = assignmentList.filter(a => a.effectiveStatus === "graded");
+  // Pending = no submission and not overdue, or overdue with no submission
+  // Submitted = has a submission with status "submitted" (not yet graded)
+  // Graded = has a submission with status "graded"
+  const pending = assignmentList.filter(a => !a.submission && (a.effectiveStatus === "pending" || a.effectiveStatus === "overdue"));
+  const submitted = assignmentList.filter(a => a.submission && a.submission.status === "submitted");
+  const graded = assignmentList.filter(a => a.submission && a.submission.status === "graded");
 
   async function handleSubmit() {
     if (!studentId || !selectedAssignment || !submitFile) return;

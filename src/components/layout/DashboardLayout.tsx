@@ -37,6 +37,7 @@ const lecturerNav: NavItem[] = [
   { label: "Assignments", icon: ClipboardList, path: "/lecturer/assignments" },
   { label: "Submissions", icon: Upload, path: "/lecturer/submissions" },
   { label: "Grade Entry", icon: CheckCircle, path: "/lecturer/grades" },
+  { label: "Timetable", icon: Calendar, path: "/lecturer/timetable" },
   { label: "Announcements", icon: MessageSquare, path: "/lecturer/announcements" },
 ];
 
@@ -47,6 +48,7 @@ const adminNav: NavItem[] = [
   { label: "Courses", icon: BookOpen, path: "/admin/courses" },
   { label: "Fee Management", icon: CreditCard, path: "/admin/fees" },
   { label: "Enrollment", icon: GraduationCap, path: "/admin/enrollment" },
+  { label: "Timetable", icon: Calendar, path: "/admin/timetable" },
   { label: "Announcements", icon: Bell, path: "/admin/announcements" },
   { label: "Reports", icon: BarChart3, path: "/admin/reports" },
   { label: "Settings", icon: Settings, path: "/admin/settings" },

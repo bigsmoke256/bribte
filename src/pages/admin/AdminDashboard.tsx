@@ -6,6 +6,7 @@ import AdminLecturersPage from "./AdminLecturersPage";
 import AdminCoursesPage from "./AdminCoursesPage";
 import AdminFeesPage from "./AdminFeesPage";
 import AdminEnrollmentPage from "./AdminEnrollmentPage";
+import AdminTimetablePage from "./AdminTimetablePage";
 import AdminAnnouncementsPage from "./AdminAnnouncementsPage";
 import AdminReportsPage from "./AdminReportsPage";
 import AdminSettingsPage from "./AdminSettingsPage";
@@ -22,6 +23,7 @@ export default function AdminDashboard() {
   if (path === "/admin/courses") return <AdminCoursesPage />;
   if (path === "/admin/fees") return <AdminFeesPage />;
   if (path === "/admin/enrollment") return <AdminEnrollmentPage />;
+  if (path === "/admin/timetable") return <AdminTimetablePage />;
   if (path === "/admin/announcements") return <AdminAnnouncementsPage />;
   if (path === "/admin/reports") return <AdminReportsPage />;
   if (path === "/admin/settings") return <AdminSettingsPage />;
