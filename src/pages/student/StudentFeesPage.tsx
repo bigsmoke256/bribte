@@ -85,14 +85,7 @@ export default function StudentFeesPage() {
     });
 
     const oneTime = applicable.filter(f => f.frequency === "once" && !f.is_optional);
-    const recurring = applicable.filter(f => {
-      if (f.frequency === "once" || f.is_optional) return false;
-      // per_semester fees only apply to semester-basis programs
-      if (f.frequency === "per_semester" && !isSemester) return false;
-      // per_term fees only apply to term-basis programs
-      if (f.frequency === "per_term" && isSemester) return false;
-      return true;
-    });
+    const recurring = applicable.filter(f => f.frequency !== "once" && !f.is_optional);
     const optional = applicable.filter(f => f.is_optional);
 
     // Determine which fees apply THIS semester
