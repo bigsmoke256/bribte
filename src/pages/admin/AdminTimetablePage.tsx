@@ -365,10 +365,10 @@ export default function AdminTimetablePage() {
               {modules.length > 0 && (
                 <div className="space-y-2">
                   <Label>Module (optional)</Label>
-                  <Select value={form.module_id} onValueChange={v => setForm({ ...form, module_id: v })}>
+                  <Select value={form.module_id || "none"} onValueChange={v => setForm({ ...form, module_id: v === "none" ? "" : v })}>
                     <SelectTrigger><SelectValue placeholder="Select module" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No specific module</SelectItem>
+                      <SelectItem value="none">No specific module</SelectItem>
                       {modules.map((m: any) => (
                         <SelectItem key={m.id} value={m.id}>{m.title}</SelectItem>
                       ))}
