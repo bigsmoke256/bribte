@@ -369,13 +369,9 @@ Return ONLY the JSON, no markdown, no explanation.`,
     validationFlags.receipt_name = receiptStudentName;
 
     if (similarity < 0.3) {
-      await supabase.from("receipt_uploads").update({
-        status: "rejected",
-        review_notes: `Student name mismatch. Receipt: "${receiptStudentName}", Database: "${studentDbName}". Names do not match.`,
-      }).eq("id", receipt_id);
-      await supabase.from("receipt_extractions").update({ validation_flags: validationFlags })
-        .eq("receipt_id", receipt_id);
-      return jsonResponse({ status: "rejected", reason: "name_mismatch" });
+      const notes = `Student name mismatch. Receipt: "${receiptStudentName}", Database: "${studentDbName}". Names do not match.`;
+      return await rejectWithAlert("name_mismatch", notes);
+    }
     }
 
     if (similarity < 0.7) {
