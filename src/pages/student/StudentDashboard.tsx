@@ -15,6 +15,7 @@ export default function StudentDashboard() {
 
   const pendingAssignments = mockAssignments.filter(a => a.status === "pending").length;
   const feePercentage = (feeStructure.paid / feeStructure.totalFees) * 100;
+  const displayName = user.fullName || user.email;
 
   return (
     <DashboardLayout>
