@@ -37,6 +37,7 @@ const lecturerNav: NavItem[] = [
   { label: "Assignments", icon: ClipboardList, path: "/lecturer/assignments" },
   { label: "Submissions", icon: Upload, path: "/lecturer/submissions" },
   { label: "Grade Entry", icon: CheckCircle, path: "/lecturer/grades" },
+  { label: "Timetable", icon: Calendar, path: "/lecturer/timetable" },
   { label: "Announcements", icon: MessageSquare, path: "/lecturer/announcements" },
 ];
 
