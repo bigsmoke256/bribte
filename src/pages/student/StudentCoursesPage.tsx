@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AnimatedCard, SectionHeader, EmptyState } from "@/components/dashboard/DashboardParts";
 import { BookOpen, Clock, Users, GraduationCap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { FileText, Download, ExternalLink } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { motion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -188,17 +189,34 @@ export default function StudentCoursesPage() {
             {materials.length === 0 ? (
               <EmptyState icon={BookOpen} title="No Materials" description="No course materials have been uploaded yet." />
             ) : (
-              materials.map((m, i) => (
-                <AnimatedCard key={m.id} delay={i * 0.05}>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold text-sm">{m.title}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{m.file_type || "Document"} • {new Date(m.created_at).toLocaleDateString()}</p>
+              materials.map((m, i) => {
+                const isPlaceholder = m.file_url.includes('/placeholder/');
+                return (
+                  <AnimatedCard key={m.id} delay={i * 0.05}>
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <FileText className="w-4 h-4 text-primary" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-sm truncate">{m.title}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {(m.file_type || "Document").toUpperCase()} • {new Date(m.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      {isPlaceholder ? (
+                        <Badge variant="secondary" className="text-[10px] flex-shrink-0">Coming Soon</Badge>
+                      ) : (
+                        <a href={m.file_url} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-xs text-primary hover:underline font-medium flex-shrink-0">
+                          <ExternalLink className="w-3 h-3" /> View
+                        </a>
+                      )}
                     </div>
-                    <a href={m.file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline font-medium">Download</a>
-                  </div>
-                </AnimatedCard>
-              ))
+                  </AnimatedCard>
+                );
+              })
             )}
           </TabsContent>
         </Tabs>
