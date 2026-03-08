@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload, Loader2, CheckCircle, AlertTriangle, XCircle } from "lucide-react";
+import { Upload, Loader2, CheckCircle, AlertTriangle, XCircle, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -18,15 +18,23 @@ interface Props {
 
 type ProcessingStatus = "idle" | "uploading" | "processing" | "verified" | "review_required" | "rejected" | "error";
 
+interface RejectionInfo {
+  title: string;
+  reasons: string[];
+  adminNotified: boolean;
+}
+
 export function ReceiptUploadDialog({ open, onOpenChange, studentId, courseId, onComplete }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<ProcessingStatus>("idle");
   const [statusMessage, setStatusMessage] = useState("");
+  const [rejectionInfo, setRejectionInfo] = useState<RejectionInfo | null>(null);
 
   const reset = () => {
     setFile(null);
     setStatus("idle");
     setStatusMessage("");
+    setRejectionInfo(null);
   };
 
   const handleClose = (val: boolean) => {
@@ -46,17 +54,13 @@ export function ReceiptUploadDialog({ open, onOpenChange, studentId, courseId, o
     setStatusMessage("Uploading receipt...");
 
     try {
-      // 1. Compute file hash
       const fileHash = await hashFile(file);
-
-      // 2. Upload to storage
       const ext = file.name.split(".").pop();
       const path = `${studentId}/${Date.now()}.${ext}`;
       const { error: uploadErr } = await supabase.storage.from("receipts").upload(path, file);
       if (uploadErr) throw uploadErr;
       const { data: urlData } = supabase.storage.from("receipts").getPublicUrl(path);
 
-      // 3. Create receipt_uploads record
       const { data: receipt, error: insertErr } = await supabase.from("receipt_uploads").insert({
         student_id: studentId,
         course_id: courseId,
@@ -66,7 +70,6 @@ export function ReceiptUploadDialog({ open, onOpenChange, studentId, courseId, o
       }).select("id").single();
       if (insertErr) throw insertErr;
 
-      // 4. Trigger OCR processing
       setStatus("processing");
       setStatusMessage("Analyzing receipt with AI...");
 
@@ -84,7 +87,11 @@ export function ReceiptUploadDialog({ open, onOpenChange, studentId, courseId, o
         
         if (updatedReceipt?.status === "rejected") {
           setStatus("rejected");
-          setStatusMessage(updatedReceipt.review_notes || "Receipt was rejected.");
+          setRejectionInfo({
+            title: "Receipt Rejected",
+            reasons: [updatedReceipt.review_notes || "Receipt did not pass verification."],
+            adminNotified: true,
+          });
           toast.error("Receipt rejected");
           onComplete();
           return;
@@ -92,7 +99,6 @@ export function ReceiptUploadDialog({ open, onOpenChange, studentId, courseId, o
         throw new Error("Processing failed. Please try again.");
       }
 
-      // 5. Show result
       if (result.status === "verified") {
         setStatus("verified");
         const balanceMsg = result.new_balance != null
@@ -120,21 +126,55 @@ export function ReceiptUploadDialog({ open, onOpenChange, studentId, courseId, o
         toast.info("Receipt submitted for admin review");
       } else if (result.status === "rejected") {
         setStatus("rejected");
-        // Show the detailed reason from the backend
-        const detail = result.details || "";
-        const reasonMap: Record<string, string> = {
-          duplicate_file: "This exact receipt file has already been uploaded.",
-          duplicate_transaction: "This transaction code has already been processed.",
-          missing_fields: `Receipt is missing required fields${result.missing ? ": " + result.missing.join(", ") : ""}. Please upload a valid SchoolPay receipt.`,
-          name_mismatch: "The student name on the receipt does not match your records.",
-          fake_receipt: `This does not appear to be a genuine SchoolPay receipt.${result.indicators?.length ? "\n\nIssues detected:\n• " + result.indicators.join("\n• ") : ""}`,
+
+        // Build rejection reasons list
+        const reasons: string[] = [];
+        
+        const reasonTitles: Record<string, string> = {
+          duplicate_file: "Duplicate Receipt",
+          duplicate_transaction: "Duplicate Transaction",
+          missing_fields: "Incomplete Receipt",
+          name_mismatch: "Student Name Mismatch",
+          fake_receipt: "Not a Genuine Receipt",
+          wrong_institution: "Wrong Institution",
+        };
+
+        const reasonDescriptions: Record<string, string> = {
+          duplicate_file: "This exact receipt file has already been uploaded previously.",
+          duplicate_transaction: "This transaction code has already been processed in the system.",
+          missing_fields: "The receipt is missing required information needed for verification.",
+          name_mismatch: "The student name on the receipt does not match your registered name.",
+          fake_receipt: "The system determined this is not a genuine SchoolPay receipt.",
           wrong_institution: "The institution on the receipt does not match Buganda Royal Institute / BRIBTE.",
         };
-        const friendlyReason = reasonMap[result.reason] || "Receipt was rejected.";
-        const fullMessage = detail
-          ? `${friendlyReason}\n\nSystem details: ${detail}`
-          : friendlyReason;
-        setStatusMessage(fullMessage + "\n\nAdministrators have been automatically notified.");
+
+        // Add the main reason
+        reasons.push(reasonDescriptions[result.reason] || "Receipt did not pass verification checks.");
+
+        // Add specific indicators for fake receipts
+        if (result.indicators?.length) {
+          result.indicators.forEach((ind: string) => reasons.push(ind));
+        }
+
+        // Add missing fields
+        if (result.missing?.length) {
+          reasons.push(`Missing fields: ${result.missing.join(", ")}`);
+        }
+
+        // Add backend details if different from what we already have
+        if (result.details && !reasons.some(r => r.includes(result.details.substring(0, 30)))) {
+          // Extract specific notes from details
+          const detailNotes = result.details.replace(/^Receipt rejected:\s*/i, "");
+          if (detailNotes && detailNotes.length > 10) {
+            reasons.push(detailNotes);
+          }
+        }
+
+        setRejectionInfo({
+          title: reasonTitles[result.reason] || "Receipt Rejected",
+          reasons,
+          adminNotified: true,
+        });
         toast.error("Receipt rejected");
       }
 
@@ -152,7 +192,7 @@ export function ReceiptUploadDialog({ open, onOpenChange, studentId, courseId, o
     processing: <Loader2 className="w-8 h-8 text-primary animate-spin" />,
     verified: <CheckCircle className="w-8 h-8 text-success" />,
     review_required: <AlertTriangle className="w-8 h-8 text-warning" />,
-    rejected: <XCircle className="w-8 h-8 text-destructive" />,
+    rejected: <ShieldAlert className="w-10 h-10 text-destructive" />,
     error: <XCircle className="w-8 h-8 text-destructive" />,
   };
 
@@ -179,6 +219,45 @@ export function ReceiptUploadDialog({ open, onOpenChange, studentId, courseId, o
                 The system will automatically extract the payment amount, transaction ID, and other details from your receipt.
               </p>
             </motion.div>
+          ) : status === "rejected" && rejectionInfo ? (
+            <motion.div key="rejected" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+              className="py-4 space-y-4">
+              {/* Header */}
+              <div className="flex flex-col items-center text-center">
+                {statusIcon.rejected}
+                <p className="font-display font-bold text-base mt-3 text-destructive">
+                  {rejectionInfo.title}
+                </p>
+              </div>
+
+              {/* Reasons List */}
+              <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4 space-y-2.5">
+                <p className="text-xs font-semibold text-destructive uppercase tracking-wide">Reasons for rejection:</p>
+                <ul className="space-y-2">
+                  {rejectionInfo.reasons.map((reason, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <XCircle className="w-3.5 h-3.5 text-destructive mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-foreground leading-snug">{reason}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Admin Notification Badge */}
+              {rejectionInfo.adminNotified && (
+                <div className="flex items-center gap-2 rounded-lg bg-muted/60 px-3 py-2">
+                  <AlertTriangle className="w-3.5 h-3.5 text-warning flex-shrink-0" />
+                  <p className="text-xs text-muted-foreground">
+                    Administrators have been automatically notified about this rejection.
+                  </p>
+                </div>
+              )}
+
+              {/* Guidance */}
+              <p className="text-xs text-muted-foreground text-center">
+                Please upload a valid, original SchoolPay receipt to proceed with your payment.
+              </p>
+            </motion.div>
           ) : (
             <motion.div key="status" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
               className="flex flex-col items-center py-8 text-center">
@@ -188,7 +267,6 @@ export function ReceiptUploadDialog({ open, onOpenChange, studentId, courseId, o
                  status === "processing" ? "Processing Receipt..." :
                  status === "verified" ? "Payment Verified!" :
                  status === "review_required" ? "Under Review" :
-                 status === "rejected" ? "Receipt Rejected" :
                  "Error"}
               </p>
               <p className="text-xs text-muted-foreground mt-2 max-w-[280px] whitespace-pre-line">{statusMessage}</p>
