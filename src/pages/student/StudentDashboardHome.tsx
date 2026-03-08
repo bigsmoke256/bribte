@@ -5,9 +5,7 @@ import { CreditCard, FileText, BookOpen, Bell, Upload, AlertTriangle, Graduation
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { ReceiptUploadDialog } from "@/components/fees/ReceiptUploadDialog";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState, useMemo } from "react";
