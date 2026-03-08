@@ -50,6 +50,7 @@ export default function AdminDashboard() {
         <Route path="records" element={<AdminRecordsPage />} />
         <Route path="alumni" element={<AdminAlumniPage />} />
         <Route path="audit-logs" element={<AdminAuditLogPage />} />
+        <Route path="policies" element={<AdminPoliciesPage />} />
         <Route path="settings" element={<AdminSettingsPage />} />
         <Route path="profile" element={<ProfileSettingsPage />} />
       </Routes>
