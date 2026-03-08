@@ -179,10 +179,28 @@ An admin must then approve and assign a course to the student.
 
 ## Related Documentation
 
-- [Architecture & Design Document](docs/ARCHITECTURE.md)
-- [API Documentation](docs/API.md)
-- [Database Schema](docs/DATABASE_SCHEMA.md)
-- [Infrastructure & Deployment Guide](docs/DEPLOYMENT.md)
+### 1. Developer Documentation (Technical Core)
+- [Multi-Tenancy Blueprint](docs/developer/MULTI_TENANCY.md) — Data isolation strategy, RLS patterns, multi-tenant evolution plan
+- [Infrastructure & Deployment](docs/developer/INFRASTRUCTURE.md) — Cloud architecture diagram, local dev setup, deployment flow
+- [API Reference](docs/developer/API_REFERENCE.md) — All endpoints, auth (JWT), rate limits, error codes
+- [Database ERD](docs/developer/DATABASE_ERD.md) — Visual entity-relationship diagrams, 25 tables, partitioning strategy
+
+### 2. Client & Compliance Documentation
+- [Security & Data Privacy Policy](docs/compliance/SECURITY_PRIVACY.md) — GDPR/FERPA compliance, encryption, incident response
+- [RBAC Matrix](docs/compliance/RBAC_MATRIX.md) — Full access control matrix for Admin, Lecturer, Student, Parent roles
+- [Service Level Agreement (SLA)](docs/compliance/SLA.md) — 99.9% uptime commitment, support tiers, service credits
+- [User Manual & Onboarding](docs/compliance/USER_MANUAL.md) — Searchable guides for all modules (attendance, fees, clearance)
+
+### 3. Business & Operational Documentation
+- [Tenant Onboarding Guide](docs/business/TENANT_ONBOARDING.md) — New school setup process, branding, training
+- [Subscription & Billing Logic](docs/business/BILLING_LOGIC.md) — Usage tracking, Stripe integration plan, invoicing
+- [Changelog & Release Notes](docs/business/CHANGELOG.md) — Version history, compliance evidence log
+
+### Legacy Documentation
+- [Architecture (v1)](docs/ARCHITECTURE.md)
+- [API (v1)](docs/API.md)
+- [Database Schema (v1)](docs/DATABASE_SCHEMA.md)
+- [Deployment (v1)](docs/DEPLOYMENT.md)
 
 ---
 
