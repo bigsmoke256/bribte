@@ -674,6 +674,70 @@ export type Database = {
         }
         Relationships: []
       }
+      timetable_entries: {
+        Row: {
+          course_id: string
+          created_at: string
+          created_by: string
+          day_of_week: number
+          end_time: string
+          id: string
+          lecturer_id: string | null
+          module_id: string | null
+          room_location: string | null
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          created_by: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          lecturer_id?: string | null
+          module_id?: string | null
+          room_location?: string | null
+          start_time: string
+          updated_at?: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          created_by?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          lecturer_id?: string | null
+          module_id?: string | null
+          room_location?: string | null
+          start_time?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timetable_entries_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timetable_entries_lecturer_id_fkey"
+            columns: ["lecturer_id"]
+            isOneToOne: false
+            referencedRelation: "lecturers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timetable_entries_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "course_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
