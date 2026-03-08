@@ -26,9 +26,6 @@ export default function StudentDashboardHome() {
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploadOpen, setUploadOpen] = useState(false);
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
-  const [uploadAmount, setUploadAmount] = useState("");
-  const [uploading, setUploading] = useState(false);
 
   useEffect(() => { if (user) loadData(); }, [user]);
 
