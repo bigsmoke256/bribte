@@ -362,7 +362,6 @@ Return ONLY the JSON, no markdown, no explanation.`,
     // CHECK 6: Student name matching (reuse studentProfile fetched earlier)
     const studentDbName = studentName;
     const receiptStudentName = extracted.student_name || "";
-    const receiptStudentName = extracted.student_name || "";
     const similarity = nameSimilarity(studentDbName, receiptStudentName);
     validationFlags.name_similarity = similarity;
     validationFlags.db_name = studentDbName;
