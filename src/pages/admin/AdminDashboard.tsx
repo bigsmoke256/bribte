@@ -23,6 +23,7 @@ import AdminAlumniPage from "./AdminAlumniPage";
 import AdminAuditLogPage from "./AdminAuditLogPage";
 import AdminPoliciesPage from "./AdminPoliciesPage";
 import ProfileSettingsPage from "../shared/ProfileSettingsPage";
+import HelpSupportPage from "../shared/HelpSupportPage";
 
 export default function AdminDashboard() {
   const { user } = useAuth();
