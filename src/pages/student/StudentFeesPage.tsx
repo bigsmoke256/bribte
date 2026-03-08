@@ -311,6 +311,12 @@ export default function StudentFeesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <PaymentReceipt
+        open={receiptOpen}
+        onOpenChange={setReceiptOpen}
+        data={receiptPayment ? getReceiptData(receiptPayment) : null}
+      />
     </div>
   );
 }
