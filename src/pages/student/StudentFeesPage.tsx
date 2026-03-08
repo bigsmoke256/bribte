@@ -281,8 +281,13 @@ export default function StudentFeesPage() {
                     <p className="text-xs text-muted-foreground">{new Date(p.payment_date).toLocaleDateString("en-UG", { year: "numeric", month: "short", day: "numeric" })}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  {p.receipt_url && <a href={p.receipt_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">View Receipt</a>}
+                <div className="flex items-center gap-2">
+                  {p.payment_status === "approved" && (
+                    <Button size="sm" variant="ghost" className="h-7 px-2 rounded-lg text-xs" onClick={() => { setReceiptPayment(p); setReceiptOpen(true); }}>
+                      <FileDown className="w-3 h-3 mr-1" /> Receipt
+                    </Button>
+                  )}
+                  {p.receipt_url && <a href={p.receipt_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">View Upload</a>}
                   <Badge variant={p.payment_status === "approved" ? "default" : p.payment_status === "pending" ? "secondary" : "destructive"} className="text-[10px] h-5">
                     {p.payment_status}
                   </Badge>
