@@ -352,14 +352,15 @@ export default function AdminCoursesPage() {
                       <td className="text-sm font-semibold">{c.course_name}</td>
                       <td><Badge variant="outline" className="text-[10px] rounded-md">{c.program_level}</Badge></td>
                       <td className="text-sm">{c.department?.name || "—"}</td>
-                      <td className="text-sm">{getLecturerName(c.lecturer_id)}</td>
                       <td className="text-center text-sm">{c.duration_years}yr</td>
                       <td className="text-center">
                         <Badge variant={c.is_published ? "default" : "secondary"} className="text-[10px] rounded-md">
                           {c.is_published ? "Published" : "Draft"}
                         </Badge>
                       </td>
-                      <td className="text-right text-sm font-mono">UGX {(c.tuition_day || 0).toLocaleString()}</td>
+                      <td className="text-right text-sm font-mono">{(c.tuition_day || 0) > 0 ? `${(c.tuition_day || 0).toLocaleString()}` : "—"}</td>
+                      <td className="text-right text-sm font-mono">{(c.tuition_evening || 0) > 0 ? `${(c.tuition_evening || 0).toLocaleString()}` : "—"}</td>
+                      <td className="text-right text-sm font-mono">{(c.tuition_weekend || 0) > 0 ? `${(c.tuition_weekend || 0).toLocaleString()}` : "—"}</td>
                       <td className="text-center pr-5">
                         <div className="flex items-center justify-center gap-1">
                           <Button size="sm" variant="ghost" className="h-7 w-7 p-0 rounded-lg" onClick={() => openDetail(c)} title="View"><Eye className="w-3.5 h-3.5" /></Button>
