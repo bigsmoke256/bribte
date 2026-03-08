@@ -21,6 +21,7 @@ import AdminAcademicCalendarPage from "./AdminAcademicCalendarPage";
 import AdminDocumentsPage from "./AdminDocumentsPage";
 import AdminAlumniPage from "./AdminAlumniPage";
 import AdminAuditLogPage from "./AdminAuditLogPage";
+import AdminPoliciesPage from "./AdminPoliciesPage";
 import ProfileSettingsPage from "../shared/ProfileSettingsPage";
 
 export default function AdminDashboard() {
@@ -49,6 +50,7 @@ export default function AdminDashboard() {
         <Route path="records" element={<AdminRecordsPage />} />
         <Route path="alumni" element={<AdminAlumniPage />} />
         <Route path="audit-logs" element={<AdminAuditLogPage />} />
+        <Route path="policies" element={<AdminPoliciesPage />} />
         <Route path="settings" element={<AdminSettingsPage />} />
         <Route path="profile" element={<ProfileSettingsPage />} />
       </Routes>

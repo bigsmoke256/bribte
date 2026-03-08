@@ -65,6 +65,7 @@ const adminNav: NavItem[] = [
   { label: "Student Records", icon: Archive, path: "/admin/records" },
   { label: "Alumni", icon: UserCheck, path: "/admin/alumni" },
   { label: "Audit Logs", icon: Activity, path: "/admin/audit-logs" },
+  { label: "Policies & Docs", icon: FileText, path: "/admin/policies" },
   { label: "Settings", icon: Settings, path: "/admin/settings" },
 ];
 
