@@ -26,6 +26,7 @@ export default function LecturerDashboard() {
         <Route path="timetable" element={<LecturerTimetablePage />} />
         <Route path="announcements" element={<LecturerAnnouncementsPage />} />
         <Route path="profile" element={<ProfileSettingsPage />} />
+        <Route path="help" element={<HelpSupportPage />} />
       </Routes>
     </DashboardLayout>
   );

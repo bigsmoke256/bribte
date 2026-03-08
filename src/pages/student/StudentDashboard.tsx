@@ -28,6 +28,7 @@ export default function StudentDashboard() {
         <Route path="exam-card" element={<StudentExamCardPage />} />
         <Route path="clearance" element={<StudentClearancePage />} />
         <Route path="profile" element={<ProfileSettingsPage />} />
+        <Route path="help" element={<HelpSupportPage />} />
       </Routes>
     </DashboardLayout>
   );

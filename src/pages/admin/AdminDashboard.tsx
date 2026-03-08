@@ -54,6 +54,7 @@ export default function AdminDashboard() {
         <Route path="policies" element={<AdminPoliciesPage />} />
         <Route path="settings" element={<AdminSettingsPage />} />
         <Route path="profile" element={<ProfileSettingsPage />} />
+        <Route path="help" element={<HelpSupportPage />} />
       </Routes>
     </DashboardLayout>
   );
