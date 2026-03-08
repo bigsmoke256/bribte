@@ -1476,6 +1476,15 @@ export type Database = {
         Args: { p_student_id: string }
         Returns: undefined
       }
+      submit_clearance_request: {
+        Args: {
+          p_academic_year: string
+          p_clearance_type: string
+          p_semester: number
+          p_student_id: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       app_role: "admin" | "lecturer" | "student"

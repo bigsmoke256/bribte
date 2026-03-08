@@ -62,18 +62,14 @@ export default function StudentClearancePage() {
   const submitRequest = async () => {
     if (!studentId) return;
     setSubmitting(true);
-    const { data: req, error } = await supabase.from("clearance_requests").insert({
-      student_id: studentId, clearance_type: form.type,
-      academic_year: form.academic_year, semester: parseInt(form.semester), status: "pending"
-    }).select().single();
+    const { error } = await supabase.rpc("submit_clearance_request", {
+      p_student_id: studentId,
+      p_clearance_type: form.type,
+      p_academic_year: form.academic_year,
+      p_semester: parseInt(form.semester),
+    });
 
     if (error) { toast.error(error.message); setSubmitting(false); return; }
-
-    // Create the 4 clearance steps
-    const stepInserts = STEPS.map(s => ({
-      clearance_id: req.id, step_name: s.name, step_order: s.order, status: "pending"
-    }));
-    await supabase.from("clearance_steps").insert(stepInserts);
 
     toast.success("Clearance request submitted");
     setSubmitting(false);
