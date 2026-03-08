@@ -79,11 +79,18 @@ export function ReceiptUploadDialog({ open, onOpenChange, studentId, courseId, o
       // 5. Show result
       if (result.status === "verified") {
         setStatus("verified");
-        setStatusMessage("Payment verified! Your balance has been updated.");
-        toast.success("Payment verified and applied!");
+        const balanceMsg = result.new_balance != null
+          ? result.new_balance < 0
+            ? ` You now have a credit of UGX ${Math.abs(result.new_balance).toLocaleString()}.`
+            : result.new_balance === 0
+              ? " Your fees are now fully paid!"
+              : ` Remaining balance: UGX ${Number(result.new_balance).toLocaleString()}.`
+          : "";
+        setStatusMessage(`Payment of UGX ${Number(result.extracted?.amount || 0).toLocaleString()} verified and applied automatically!${balanceMsg}`);
+        toast.success("Payment verified and balance updated!");
       } else if (result.status === "review_required") {
         setStatus("review_required");
-        setStatusMessage("Your receipt is under review by administration. You'll be notified once it's processed.");
+        setStatusMessage("The system couldn't fully read your receipt. It has been sent to administration for manual review. You'll be notified once processed.");
         toast.info("Receipt submitted for admin review");
       } else if (result.status === "rejected") {
         setStatus("rejected");
