@@ -2,13 +2,14 @@ import { useAuth } from "@/lib/auth-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AnimatedCard, EmptyState } from "@/components/dashboard/DashboardParts";
-import { Calendar, Clock, MapPin, Plus, Trash2, Edit2, BookOpen, User, Filter } from "lucide-react";
+import { Calendar, Clock, MapPin, Plus, Trash2, Edit2, BookOpen, User, Filter, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,6 +27,11 @@ const DAY_COLORS = [
   "bg-pink-500/10 border-pink-500/20 text-pink-700",
 ];
 
+interface TimeSlot {
+  start_time: string;
+  end_time: string;
+}
+
 function formatTime(time: string) {
   const [h, m] = time.split(":");
   const hour = parseInt(h);
@@ -40,15 +46,16 @@ export default function AdminTimetablePage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<any>(null);
   const [filterCourse, setFilterCourse] = useState<string>("all");
+  
+  // Form state - now supports multiple days and time slots
   const [form, setForm] = useState({
     course_id: "",
     lecturer_id: "",
-    day_of_week: "1",
-    start_time: "08:00",
-    end_time: "10:00",
     room_location: "",
     module_id: "",
   });
+  const [selectedDays, setSelectedDays] = useState<number[]>([1]); // Default: Monday
+  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([{ start_time: "08:00", end_time: "10:00" }]);
 
   // Get all courses
   const { data: courses = [] } = useQuery({
@@ -110,27 +117,44 @@ export default function AdminTimetablePage() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const payload = {
-        course_id: form.course_id,
-        lecturer_id: form.lecturer_id || null,
-        day_of_week: parseInt(form.day_of_week),
-        start_time: form.start_time,
-        end_time: form.end_time,
-        room_location: form.room_location || null,
-        module_id: form.module_id || null,
-        created_by: user!.id,
-      };
-
       if (editingEntry) {
+        // When editing, update single entry
+        const payload = {
+          course_id: form.course_id,
+          lecturer_id: form.lecturer_id || null,
+          day_of_week: selectedDays[0],
+          start_time: timeSlots[0].start_time,
+          end_time: timeSlots[0].end_time,
+          room_location: form.room_location || null,
+          module_id: form.module_id || null,
+          created_by: user!.id,
+        };
         const { error } = await supabase.from("timetable_entries").update(payload).eq("id", editingEntry.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("timetable_entries").insert(payload);
+        // When adding new, create entries for all day+time combinations
+        const entries = [];
+        for (const day of selectedDays) {
+          for (const slot of timeSlots) {
+            entries.push({
+              course_id: form.course_id,
+              lecturer_id: form.lecturer_id || null,
+              day_of_week: day,
+              start_time: slot.start_time,
+              end_time: slot.end_time,
+              room_location: form.room_location || null,
+              module_id: form.module_id || null,
+              created_by: user!.id,
+            });
+          }
+        }
+        const { error } = await supabase.from("timetable_entries").insert(entries);
         if (error) throw error;
       }
     },
     onSuccess: () => {
-      toast.success(editingEntry ? "Timetable entry updated!" : "Timetable entry added!");
+      const count = editingEntry ? 1 : selectedDays.length * timeSlots.length;
+      toast.success(editingEntry ? "Timetable entry updated!" : `${count} timetable ${count === 1 ? 'entry' : 'entries'} added!`);
       queryClient.invalidateQueries({ queryKey: ["admin-timetable"] });
       closeDialog();
     },
@@ -155,23 +179,21 @@ export default function AdminTimetablePage() {
       setForm({
         course_id: entry.course_id,
         lecturer_id: entry.lecturer_id || "",
-        day_of_week: entry.day_of_week.toString(),
-        start_time: entry.start_time,
-        end_time: entry.end_time,
         room_location: entry.room_location || "",
         module_id: entry.module_id || "",
       });
+      setSelectedDays([entry.day_of_week]);
+      setTimeSlots([{ start_time: entry.start_time, end_time: entry.end_time }]);
     } else {
       setEditingEntry(null);
       setForm({
         course_id: "",
         lecturer_id: "",
-        day_of_week: "1",
-        start_time: "08:00",
-        end_time: "10:00",
         room_location: "",
         module_id: "",
       });
+      setSelectedDays([1]); // Default Monday
+      setTimeSlots([{ start_time: "08:00", end_time: "10:00" }]);
     }
     setDialogOpen(true);
   };
@@ -179,6 +201,32 @@ export default function AdminTimetablePage() {
   const closeDialog = () => {
     setDialogOpen(false);
     setEditingEntry(null);
+  };
+
+  const toggleDay = (dayIndex: number) => {
+    if (selectedDays.includes(dayIndex)) {
+      if (selectedDays.length > 1) {
+        setSelectedDays(selectedDays.filter(d => d !== dayIndex));
+      }
+    } else {
+      setSelectedDays([...selectedDays, dayIndex].sort());
+    }
+  };
+
+  const addTimeSlot = () => {
+    setTimeSlots([...timeSlots, { start_time: "10:00", end_time: "12:00" }]);
+  };
+
+  const removeTimeSlot = (index: number) => {
+    if (timeSlots.length > 1) {
+      setTimeSlots(timeSlots.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateTimeSlot = (index: number, field: 'start_time' | 'end_time', value: string) => {
+    const updated = [...timeSlots];
+    updated[index][field] = value;
+    setTimeSlots(updated);
   };
 
   // Group by day
@@ -193,6 +241,8 @@ export default function AdminTimetablePage() {
     if (!lecturerId) return null;
     return lecturers.find((l: any) => l.id === lecturerId)?.full_name;
   };
+
+  const totalEntries = selectedDays.length * timeSlots.length;
 
   return (
     <DashboardLayout>
@@ -303,12 +353,13 @@ export default function AdminTimetablePage() {
         )}
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent>
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{editingEntry ? "Edit Timetable Entry" : "Add Timetable Entry"}</DialogTitle>
+              <DialogTitle>{editingEntry ? "Edit Timetable Entry" : "Add Timetable Entries"}</DialogTitle>
             </DialogHeader>
 
-            <div className="space-y-4 py-2">
+            <div className="space-y-5 py-2">
+              {/* Course Selection */}
               <div className="space-y-2">
                 <Label>Course *</Label>
                 <Select value={form.course_id} onValueChange={v => setForm({ ...form, course_id: v, module_id: "" })}>
@@ -321,6 +372,7 @@ export default function AdminTimetablePage() {
                 </Select>
               </div>
 
+              {/* Lecturer Selection */}
               <div className="space-y-2">
                 <Label>Lecturer (optional)</Label>
                 <Select value={form.lecturer_id || "none"} onValueChange={v => setForm({ ...form, lecturer_id: v === "none" ? "" : v })}>
@@ -334,34 +386,95 @@ export default function AdminTimetablePage() {
                 </Select>
               </div>
 
+              {/* Days Selection - Multi-select with checkboxes */}
               <div className="space-y-2">
-                <Label>Day of Week</Label>
-                <Select value={form.day_of_week} onValueChange={v => setForm({ ...form, day_of_week: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {DAYS.map((day, i) => (
-                      <SelectItem key={i} value={i.toString()}>{day}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>Days {!editingEntry && "(select multiple)"}</Label>
+                <div className="grid grid-cols-4 gap-2">
+                  {DAYS.map((day, i) => (
+                    <label 
+                      key={i}
+                      className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors ${
+                        selectedDays.includes(i) 
+                          ? 'bg-primary/10 border-primary text-primary' 
+                          : 'bg-muted/30 border-border hover:bg-muted/50'
+                      } ${editingEntry ? 'pointer-events-none opacity-70' : ''}`}
+                    >
+                      <Checkbox 
+                        checked={selectedDays.includes(i)} 
+                        onCheckedChange={() => !editingEntry && toggleDay(i)}
+                        disabled={editingEntry}
+                      />
+                      <span className="text-xs font-medium">{day.slice(0, 3)}</span>
+                    </label>
+                  ))}
+                </div>
+                {!editingEntry && selectedDays.length > 1 && (
+                  <p className="text-xs text-muted-foreground">
+                    Selected: {selectedDays.map(d => DAYS[d].slice(0, 3)).join(", ")}
+                  </p>
+                )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Start Time</Label>
-                  <Input type="time" value={form.start_time} onChange={e => setForm({ ...form, start_time: e.target.value })} />
+              {/* Time Slots - Allow multiple */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label>Time Slots</Label>
+                  {!editingEntry && (
+                    <Button type="button" variant="outline" size="sm" onClick={addTimeSlot} className="gap-1 h-7 text-xs">
+                      <Plus className="w-3 h-3" />
+                      Add Time Slot
+                    </Button>
+                  )}
                 </div>
-                <div className="space-y-2">
-                  <Label>End Time</Label>
-                  <Input type="time" value={form.end_time} onChange={e => setForm({ ...form, end_time: e.target.value })} />
-                </div>
+                
+                {timeSlots.map((slot, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <div className="flex-1 grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Start</Label>
+                        <Input 
+                          type="time" 
+                          value={slot.start_time} 
+                          onChange={e => updateTimeSlot(index, 'start_time', e.target.value)} 
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">End</Label>
+                        <Input 
+                          type="time" 
+                          value={slot.end_time} 
+                          onChange={e => updateTimeSlot(index, 'end_time', e.target.value)} 
+                        />
+                      </div>
+                    </div>
+                    {!editingEntry && timeSlots.length > 1 && (
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 mt-5 text-destructive hover:text-destructive"
+                        onClick={() => removeTimeSlot(index)}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+
+                {!editingEntry && timeSlots.length > 1 && (
+                  <p className="text-xs text-muted-foreground">
+                    {timeSlots.length} time slots configured
+                  </p>
+                )}
               </div>
 
+              {/* Room Location */}
               <div className="space-y-2">
                 <Label>Room / Location (optional)</Label>
                 <Input value={form.room_location} onChange={e => setForm({ ...form, room_location: e.target.value })} placeholder="e.g., Room 101, Lab A" />
               </div>
 
+              {/* Module Selection */}
               {modules.length > 0 && (
                 <div className="space-y-2">
                   <Label>Module (optional)</Label>
@@ -376,12 +489,24 @@ export default function AdminTimetablePage() {
                   </Select>
                 </div>
               )}
+
+              {/* Summary for batch creation */}
+              {!editingEntry && totalEntries > 1 && (
+                <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                  <p className="text-sm font-medium text-primary">
+                    This will create {totalEntries} timetable {totalEntries === 1 ? 'entry' : 'entries'}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {selectedDays.length} day{selectedDays.length > 1 ? 's' : ''} × {timeSlots.length} time slot{timeSlots.length > 1 ? 's' : ''}
+                  </p>
+                </div>
+              )}
             </div>
 
             <DialogFooter>
               <Button variant="outline" onClick={closeDialog}>Cancel</Button>
               <Button onClick={() => saveMutation.mutate()} disabled={!form.course_id || saveMutation.isPending}>
-                {saveMutation.isPending ? "Saving..." : editingEntry ? "Update" : "Add"}
+                {saveMutation.isPending ? "Saving..." : editingEntry ? "Update" : `Add ${totalEntries > 1 ? `${totalEntries} Entries` : 'Entry'}`}
               </Button>
             </DialogFooter>
           </DialogContent>
