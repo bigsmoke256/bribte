@@ -42,7 +42,7 @@ export default function AdminReceiptReviewPage() {
   const [receipts, setReceipts] = useState<ReceiptRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [tab, setTab] = useState("review_required");
+  const [tab, setTab] = useState("all");
   const [selectedReceipt, setSelectedReceipt] = useState<ReceiptRow | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [adminNotes, setAdminNotes] = useState("");
