@@ -1,21 +1,16 @@
-import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AnimatedCard } from "@/components/dashboard/DashboardParts";
-import { ExternalLink, Play, FileText, Image, Film, Music } from "lucide-react";
+import { Download, FileText, Image, Film, Music, File } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 
 export default function LecturerSubmissionsPage() {
   const { user } = useAuth();
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [previewType, setPreviewType] = useState<string>("");
-  const [previewOpen, setPreviewOpen] = useState(false);
 
   const { data: assignments = [] } = useQuery({
     queryKey: ["lecturer-assignments", user?.id],
@@ -74,7 +69,11 @@ export default function LecturerSubmissionsPage() {
     if (['mp4', 'webm', 'mov', 'avi', 'mkv'].includes(ext)) return 'video';
     if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext)) return 'image';
     if (['pdf'].includes(ext)) return 'pdf';
-    return 'document';
+    if (['doc', 'docx'].includes(ext)) return 'word';
+    if (['ppt', 'pptx'].includes(ext)) return 'powerpoint';
+    if (['xls', 'xlsx'].includes(ext)) return 'excel';
+    if (['psd'].includes(ext)) return 'photoshop';
+    return 'file';
   };
 
   const getFileIcon = (type: string) => {
@@ -86,34 +85,55 @@ export default function LecturerSubmissionsPage() {
     }
   };
 
-  const handleViewFile = async (filePath: string) => {
+  const getFileLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      audio: 'Audio',
+      video: 'Video',
+      image: 'Image',
+      pdf: 'PDF',
+      word: 'Word',
+      powerpoint: 'PPT',
+      excel: 'Excel',
+      photoshop: 'PSD',
+      file: 'File'
+    };
+    return labels[type] || 'File';
+  };
+
+  const handleDownloadFile = async (filePath: string, studentName: string) => {
     if (!filePath) return;
     
-    // Check if it's a full URL (legacy) or just a path
+    // If it's already a full URL (legacy), just open it
     if (filePath.startsWith('http')) {
       window.open(filePath, '_blank');
       return;
     }
 
     try {
+      toast.loading("Preparing download...");
+      
       const { data, error } = await supabase.storage
         .from("submissions")
-        .createSignedUrl(filePath, 3600); // 1 hour expiry
+        .download(filePath);
 
       if (error) throw error;
       
-      const fileType = getFileType(filePath);
+      // Create download link
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      const ext = filePath.split('.').pop() || 'file';
+      a.download = `${studentName.replace(/\s+/g, '_')}_submission.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
       
-      if (['audio', 'video', 'image', 'pdf'].includes(fileType)) {
-        setPreviewUrl(data.signedUrl);
-        setPreviewType(fileType);
-        setPreviewOpen(true);
-      } else {
-        // For documents (Word, Excel, etc.), download directly
-        window.open(data.signedUrl, '_blank');
-      }
+      toast.dismiss();
+      toast.success("File downloaded! It will open in your default app.");
     } catch (err: any) {
-      toast.error("Failed to load file: " + err.message);
+      toast.dismiss();
+      toast.error("Failed to download: " + err.message);
     }
   };
 
@@ -139,7 +159,7 @@ export default function LecturerSubmissionsPage() {
                   <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs hidden md:table-cell">Course</th>
                   <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Status</th>
                   <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs hidden sm:table-cell">Submitted</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">File</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Download</th>
                 </tr>
               </thead>
               <tbody>
@@ -169,9 +189,15 @@ export default function LecturerSubmissionsPage() {
                       </td>
                       <td className="px-4 py-3">
                         {s.file_url ? (
-                          <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-xs" onClick={() => handleViewFile(s.file_url!)}>
-                            {getFileIcon(fileType || 'document')}
-                            <span className="hidden sm:inline">View</span>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-7 gap-1.5 text-xs" 
+                            onClick={() => handleDownloadFile(s.file_url!, student?.name || "Student")}
+                          >
+                            {getFileIcon(fileType || 'file')}
+                            <Download className="w-3 h-3" />
+                            <span className="hidden sm:inline">{getFileLabel(fileType || 'file')}</span>
                           </Button>
                         ) : <span className="text-xs text-muted-foreground">—</span>}
                       </td>
@@ -183,41 +209,6 @@ export default function LecturerSubmissionsPage() {
           </div>
         </AnimatedCard>
       )}
-
-      {/* Preview Dialog */}
-      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
-          <DialogHeader>
-            <DialogTitle>File Preview</DialogTitle>
-          </DialogHeader>
-          <div className="mt-4">
-            {previewType === 'audio' && previewUrl && (
-              <audio controls className="w-full" src={previewUrl}>
-                Your browser does not support the audio element.
-              </audio>
-            )}
-            {previewType === 'video' && previewUrl && (
-              <video controls className="w-full max-h-[60vh]" src={previewUrl}>
-                Your browser does not support the video element.
-              </video>
-            )}
-            {previewType === 'image' && previewUrl && (
-              <img src={previewUrl} alt="Submission" className="max-w-full max-h-[60vh] mx-auto rounded-lg" />
-            )}
-            {previewType === 'pdf' && previewUrl && (
-              <iframe src={previewUrl} className="w-full h-[60vh] rounded-lg border" />
-            )}
-          </div>
-          {previewUrl && (
-            <div className="mt-4 flex justify-end">
-              <Button variant="outline" onClick={() => window.open(previewUrl, '_blank')}>
-                <ExternalLink className="w-4 h-4 mr-2" />
-                Open in New Tab
-              </Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
