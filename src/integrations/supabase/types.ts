@@ -347,6 +347,42 @@ export type Database = {
           },
         ]
       }
+      fee_items: {
+        Row: {
+          amount: number
+          applies_to: string
+          category: string
+          created_at: string
+          frequency: string
+          id: string
+          is_optional: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          applies_to?: string
+          category?: string
+          created_at?: string
+          frequency?: string
+          id?: string
+          is_optional?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          applies_to?: string
+          category?: string
+          created_at?: string
+          frequency?: string
+          id?: string
+          is_optional?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       lecturers: {
         Row: {
           created_at: string
