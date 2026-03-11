@@ -463,8 +463,8 @@ export default function AdminStudentsPage() {
                   <p className="text-sm font-bold mt-1">Y{profileStudent.year_of_study} / S{profileStudent.semester}</p>
                 </div>
                 <div className="p-3 rounded-xl bg-muted/30 text-center">
-                  <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Fee Balance</p>
-                  <p className="text-sm font-bold mt-1 text-warning">UGX {profileStudent.fee_balance.toLocaleString()}</p>
+                  <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Study Mode</p>
+                  <p className="text-sm font-bold mt-1">{profileStudent.study_mode}</p>
                 </div>
               </div>
 
