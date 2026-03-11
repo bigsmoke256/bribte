@@ -13,7 +13,7 @@ import AdminAttendancePage from "./AdminAttendancePage";
 import AdminAnnouncementsPage from "./AdminAnnouncementsPage";
 import AdminReportsPage from "./AdminReportsPage";
 import AdminSettingsPage from "./AdminSettingsPage";
-import AdminReceiptReviewPage from "./AdminReceiptReviewPage";
+
 import AdminRecordsPage from "./AdminRecordsPage";
 import AdminExamsPage from "./AdminExamsPage";
 import AdminClearancePage from "./AdminClearancePage";
