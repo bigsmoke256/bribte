@@ -299,7 +299,7 @@ export default function AdminStudentsPage() {
                       <td className="text-center">
                         <Badge className={`text-[10px] font-semibold rounded-md border ${statusColor(s.status)}`}>{s.status}</Badge>
                       </td>
-                      <td className="text-right text-sm font-mono">UGX {s.fee_balance.toLocaleString()}</td>
+                      
                       <td className="text-center pr-5">
                         <div className="flex items-center justify-center gap-0.5">
                           <Button size="sm" variant="ghost" className="h-7 w-7 p-0 rounded-lg" onClick={() => openProfile(s)} title="View Profile">
