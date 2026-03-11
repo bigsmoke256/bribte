@@ -517,30 +517,8 @@ export default function AdminStudentsPage() {
                   )}
                 </TabsContent>
 
-                <TabsContent value="fees" className="mt-3">
-                  {profilePayments.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-4">No payment records</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {profilePayments.map((p: any) => (
-                        <div key={p.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/40">
-                          <div>
-                            <p className="text-sm font-semibold font-mono">UGX {p.amount?.toLocaleString()}</p>
-                            <p className="text-[10px] text-muted-foreground">
-                              {new Date(p.payment_date).toLocaleDateString("en-UG", { year: "numeric", month: "short", day: "numeric" })}
-                              {p.academic_year && ` • ${p.academic_year}`}
-                            </p>
-                          </div>
-                          <Badge className={`text-[10px] font-semibold rounded-md border ${
-                            p.payment_status === "approved" ? "bg-success/10 text-success border-success/20" :
-                            p.payment_status === "pending" ? "bg-warning/10 text-warning border-warning/20" :
-                            "bg-destructive/10 text-destructive border-destructive/20"
-                          }`}>{p.payment_status}</Badge>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </TabsContent>
+
+
               </Tabs>
             </div>
           )}
