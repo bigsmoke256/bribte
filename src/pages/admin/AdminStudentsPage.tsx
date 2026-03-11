@@ -470,10 +470,9 @@ export default function AdminStudentsPage() {
 
               {/* Tabs */}
               <Tabs defaultValue="enrollments" className="w-full">
-                <TabsList className="w-full rounded-xl">
+               <TabsList className="w-full rounded-xl">
                   <TabsTrigger value="enrollments" className="flex-1 rounded-lg text-xs">Enrollments</TabsTrigger>
                   <TabsTrigger value="grades" className="flex-1 rounded-lg text-xs">Grades</TabsTrigger>
-                  <TabsTrigger value="fees" className="flex-1 rounded-lg text-xs">Fee History</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="enrollments" className="mt-3">
