@@ -1,15 +1,12 @@
 import { useAuth } from "@/lib/auth-context";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { AnimatedCard, SectionHeader, EmptyState } from "@/components/dashboard/DashboardParts";
-import { CreditCard, FileText, BookOpen, Bell, Upload, AlertTriangle, GraduationCap, CircleAlert } from "lucide-react";
+import { FileText, BookOpen, Bell, AlertTriangle, GraduationCap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { ReceiptUploadDialog } from "@/components/fees/ReceiptUploadDialog";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState, useMemo } from "react";
-import { toast } from "sonner";
 
 interface StudentRecord {
   id: string; registration_number: string | null; status: string; study_mode: string;
@@ -20,12 +17,10 @@ interface StudentRecord {
 export default function StudentDashboardHome() {
   const { user } = useAuth();
   const [student, setStudent] = useState<StudentRecord | null>(null);
-  const [payments, setPayments] = useState<any[]>([]);
   const [assignments, setAssignments] = useState<any[]>([]);
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [uploadOpen, setUploadOpen] = useState(false);
 
   useEffect(() => { if (user) loadData(); }, [user]);
 
@@ -37,9 +32,7 @@ export default function StudentDashboardHome() {
     setStudent(studentData);
     if (!studentData) { setLoading(false); return; }
 
-    const [paymentsRes, assignmentsRes, submissionsRes, announcementsRes] = await Promise.all([
-      supabase.from("payments").select("id, amount, payment_date, payment_status, semester, academic_year, receipt_url")
-        .eq("student_id", studentData.id).order("payment_date", { ascending: false }),
+    const [assignmentsRes, submissionsRes, announcementsRes] = await Promise.all([
       supabase.from("assignments").select("id, title, deadline, max_grade, course_id, course:courses(course_name, course_code)")
         .eq("course_id", studentData.course_id || "").order("deadline", { ascending: true }),
       supabase.from("submissions").select("id, assignment_id, status, grade, feedback").eq("student_id", studentData.id),
@@ -47,20 +40,11 @@ export default function StudentDashboardHome() {
         .in("target_group", ["all", "students"]).order("created_at", { ascending: false }).limit(10),
     ]);
 
-    setPayments(paymentsRes.data || []);
     setAssignments((assignmentsRes.data as any[]) || []);
     setSubmissions(submissionsRes.data || []);
     setAnnouncements(announcementsRes.data || []);
     setLoading(false);
   }
-
-  const feeStats = useMemo(() => {
-    const approved = payments.filter(p => p.payment_status === "approved");
-    const totalPaid = approved.reduce((s, p) => s + Number(p.amount), 0);
-    const balance = student?.fee_balance ?? 0;
-    const totalFees = totalPaid + balance;
-    return { totalFees, totalPaid, balance, percentage: totalFees > 0 ? (totalPaid / totalFees) * 100 : 0 };
-  }, [payments, student]);
 
   const assignmentList = useMemo(() => {
     const subMap = new Map(submissions.map(s => [s.assignment_id, s]));
@@ -68,7 +52,6 @@ export default function StudentDashboardHome() {
   }, [assignments, submissions]);
 
   const pendingAssignments = assignmentList.filter(a => a.effectiveStatus === "pending" || a.effectiveStatus === "submitted");
-
 
   if (!user) return null;
   const displayName = user.fullName || user.email;
@@ -96,62 +79,13 @@ export default function StudentDashboardHome() {
         </div>
       </motion.div>
 
-      {/* Fee Balance Alert */}
-      {feeStats.balance > 0 && (
-        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-          className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 flex items-start gap-3">
-          <div className="h-9 w-9 rounded-lg bg-destructive/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-            <CircleAlert className="w-5 h-5 text-destructive" />
-          </div>
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-destructive">Outstanding Fee Balance</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              You have an outstanding balance of <span className="font-bold text-destructive">UGX {feeStats.balance.toLocaleString()}</span>. 
-              Please make a payment to avoid penalties. Your tuition is UGX {feeStats.totalFees.toLocaleString()} and you've paid UGX {feeStats.totalPaid.toLocaleString()}.
-            </p>
-          </div>
-          <Button variant="outline" size="sm" className="rounded-lg border-destructive/30 text-destructive hover:bg-destructive/10 text-xs flex-shrink-0" onClick={() => setUploadOpen(true)}>
-            Pay Now
-          </Button>
-        </motion.div>
-      )}
-
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Fee Balance" value={`${(feeStats.balance / 1000).toFixed(0)}K`} subtitle={`UGX • ${feeStats.percentage.toFixed(0)}% paid`} icon={CreditCard} variant={feeStats.percentage >= 75 ? "success" : "warning"} delay={0} />
-        <StatCard title="Pending Tasks" value={pendingAssignments.length} subtitle="Assignments" icon={FileText} delay={0.05} />
-        <StatCard title="Payments" value={payments.length} subtitle={`${payments.filter(p => p.payment_status === "approved").length} approved`} icon={CreditCard} variant="info" delay={0.1} />
-        <StatCard title="Announcements" value={announcements.length} subtitle="Recent notices" icon={Bell} variant="success" delay={0.15} />
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+        <StatCard title="Pending Tasks" value={pendingAssignments.length} subtitle="Assignments" icon={FileText} delay={0} />
+        <StatCard title="Courses" value={assignments.length > 0 ? 1 : 0} subtitle="Enrolled" icon={BookOpen} variant="info" delay={0.05} />
+        <StatCard title="Announcements" value={announcements.length} subtitle="Recent notices" icon={Bell} variant="success" delay={0.1} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <AnimatedCard delay={0.1}>
-          <SectionHeader title="Fee Status" icon={CreditCard} />
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div><p className="text-xs text-muted-foreground mb-0.5">Total Fees</p><p className="font-display font-bold text-lg">UGX {feeStats.totalFees.toLocaleString()}</p></div>
-              <div className={`metric-badge ${feeStats.percentage >= 75 ? "metric-badge-success" : feeStats.percentage >= 50 ? "metric-badge-warning" : "metric-badge-destructive"}`}>{feeStats.percentage.toFixed(0)}% paid</div>
-            </div>
-            <Progress value={feeStats.percentage} className="h-3 rounded-full" />
-            <div className="grid grid-cols-2 gap-3">
-              <div className="p-3 rounded-xl bg-success-light"><p className="text-[10px] text-success font-semibold uppercase tracking-wider">Paid</p><p className="font-display font-bold text-success text-sm mt-0.5">UGX {feeStats.totalPaid.toLocaleString()}</p></div>
-              <div className="p-3 rounded-xl bg-destructive/5"><p className="text-[10px] text-destructive font-semibold uppercase tracking-wider">Balance</p><p className="font-display font-bold text-destructive text-sm mt-0.5">UGX {feeStats.balance.toLocaleString()}</p></div>
-            </div>
-            <Button variant="outline" size="sm" className="w-full rounded-xl" onClick={() => setUploadOpen(true)}><Upload className="w-3.5 h-3.5 mr-2" /> Upload Payment Receipt</Button>
-            {payments.length > 0 && (
-              <div className="space-y-2 pt-2 border-t">
-                <p className="text-xs font-semibold text-muted-foreground">Recent Payments</p>
-                {payments.slice(0, 3).map(p => (
-                  <div key={p.id} className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">{new Date(p.payment_date).toLocaleDateString("en-UG", { month: "short", day: "numeric" })}</span>
-                    <span className="font-semibold">UGX {Number(p.amount).toLocaleString()}</span>
-                    <Badge variant={p.payment_status === "approved" ? "default" : p.payment_status === "pending" ? "secondary" : "destructive"} className="text-[10px] h-5">{p.payment_status}</Badge>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </AnimatedCard>
-
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <AnimatedCard delay={0.15}>
           <SectionHeader title="Assignments" icon={FileText} badge={pendingAssignments.length} />
           <div className="space-y-2.5">
@@ -191,8 +125,6 @@ export default function StudentDashboardHome() {
           </div>
         </AnimatedCard>
       </div>
-
-      <ReceiptUploadDialog open={uploadOpen} onOpenChange={setUploadOpen} studentId={student.id} courseId={student.course_id} onComplete={loadData} />
     </div>
   );
 }
