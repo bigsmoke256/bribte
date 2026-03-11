@@ -3,7 +3,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import StudentDashboardHome from "./StudentDashboardHome";
 import StudentCoursesPage from "./StudentCoursesPage";
 import StudentAssignmentsPage from "./StudentAssignmentsPage";
-import StudentFeesPage from "./StudentFeesPage";
+
 import StudentResultsPage from "./StudentResultsPage";
 import StudentTimetablePage from "./StudentTimetablePage";
 import StudentSchedulePage from "./StudentSchedulePage";
