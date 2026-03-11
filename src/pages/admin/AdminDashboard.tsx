@@ -5,7 +5,7 @@ import AdminDashboardHome from "./AdminDashboardHome";
 import AdminStudentsPage from "./AdminStudentsPage";
 import AdminLecturersPage from "./AdminLecturersPage";
 import AdminCoursesPage from "./AdminCoursesPage";
-import AdminFeesPage from "./AdminFeesPage";
+
 import AdminEnrollmentPage from "./AdminEnrollmentPage";
 import AdminTimetablePage from "./AdminTimetablePage";
 import AdminSchedulingPage from "./AdminSchedulingPage";
