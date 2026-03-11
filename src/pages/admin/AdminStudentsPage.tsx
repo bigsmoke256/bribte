@@ -274,7 +274,7 @@ export default function AdminStudentsPage() {
                     <th className="text-center">Year</th>
                     <th className="text-center">Mode</th>
                     <th className="text-center">Status</th>
-                    <th className="text-right">Fee Balance</th>
+                    
                     <th className="text-center pr-5">Actions</th>
                   </tr>
                 </thead>
