@@ -50,44 +50,69 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Create user
-  const { data: userData, error: createError } = await supabase.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-    user_metadata: { full_name, role },
-  });
+  try {
+    // Create user
+    const { data: userData, error: createError } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { full_name, role },
+    });
 
-  if (createError) {
-    return new Response(JSON.stringify({ error: createError.message }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (createError) {
+      return new Response(JSON.stringify({ error: createError.message }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const userId = userData.user.id;
+
+    // Wait briefly for the handle_new_user trigger to complete
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Upsert profile (trigger may have already created it)
+    await supabase.from("profiles").upsert(
+      { user_id: userId, full_name, email },
+      { onConflict: "user_id" }
+    );
+
+    // Upsert role (trigger may have already created it for students)
+    const { data: existingRole } = await supabase
+      .from("user_roles")
+      .select("id, role")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (existingRole) {
+      // Update role if different
+      if (existingRole.role !== role) {
+        await supabase.from("user_roles").update({ role }).eq("id", existingRole.id);
+      }
+    } else {
+      await supabase.from("user_roles").insert({ user_id: userId, role });
+    }
+
+    // If lecturer, create lecturer record if not exists
+    if (role === "lecturer") {
+      const { data: existingLec } = await supabase.from("lecturers").select("id").eq("user_id", userId).maybeSingle();
+      if (!existingLec) {
+        await supabase.from("lecturers").insert({ user_id: userId });
+      }
+    }
+
+    // If student, create student record if not exists
+    if (role === "student") {
+      const { data: existingStudent } = await supabase.from("students").select("id").eq("user_id", userId).maybeSingle();
+      if (!existingStudent) {
+        await supabase.from("students").insert({ user_id: userId, status: "pending" });
+      }
+    }
+
+    return new Response(JSON.stringify({ success: true, user_id: userId }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: e.message || "Internal error" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
-
-  const userId = userData.user.id;
-
-  // Create profile
-  await supabase.from("profiles").insert({
-    user_id: userId,
-    full_name,
-    email,
-  });
-
-  // Create role
-  await supabase.from("user_roles").insert({
-    user_id: userId,
-    role,
-  });
-
-  // If lecturer, create lecturer record
-  if (role === "lecturer") {
-    await supabase.from("lecturers").insert({ user_id: userId });
-  }
-
-  // If student, create student record (handle_new_user trigger won't fire for admin-created users)
-  if (role === "student") {
-    await supabase.from("students").insert({ user_id: userId, status: "pending" });
-  }
-
-  return new Response(JSON.stringify({ success: true, user_id: userId }), {
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
 });

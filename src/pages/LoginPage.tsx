@@ -4,13 +4,10 @@ import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GraduationCap, User, BookOpen, Shield, Eye, EyeOff, ArrowRight, UserPlus } from "lucide-react";
+import { Eye, EyeOff, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import campusHero from "@/assets/campus-hero.jpg";
 import bribteCrest from "@/assets/bribte-crest.png";
-import { toast } from "@/hooks/use-toast";
-
-type Mode = "login" | "signup";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -24,12 +21,10 @@ const itemVariants = {
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
-  const [mode, setMode] = useState<Mode>("login");
   const [loading, setLoading] = useState(false);
-  const { login, signup, isAuthenticated, user } = useAuth();
+  const { login, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
 
   // Redirect if already logged in
@@ -42,21 +37,11 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
     if (!email || !password) { setError("Please fill in all fields"); return; }
-    if (mode === "signup" && !fullName) { setError("Please enter your full name"); return; }
 
     setLoading(true);
     try {
-      if (mode === "login") {
-        const { error: loginError } = await login(email, password);
-        if (loginError) { setError(loginError); setLoading(false); return; }
-      } else {
-        const { error: signupError } = await signup(email, password, fullName);
-        if (signupError) { setError(signupError); setLoading(false); return; }
-        toast({ title: "Account created!", description: "Please check your email to confirm your account, or sign in if auto-confirm is enabled." });
-        setMode("login");
-        setLoading(false);
-        return;
-      }
+      const { error: loginError } = await login(email, password);
+      if (loginError) { setError(loginError); setLoading(false); return; }
     } catch {
       setError("An unexpected error occurred");
     }
@@ -101,7 +86,7 @@ export default function LoginPage() {
         </motion.div>
       </div>
 
-      {/* Right panel - login/signup form */}
+      {/* Right panel - login form */}
       <div className="flex-1 flex items-center justify-center p-6 sm:p-10 bg-background relative">
         <div className="absolute inset-0 opacity-[0.03]"
           style={{ backgroundImage: "radial-gradient(circle, hsl(217,71%,45%) 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
@@ -117,26 +102,14 @@ export default function LoginPage() {
           </motion.div>
 
           <motion.div variants={itemVariants} className="mb-8">
-            <h2 className="font-display text-2xl font-bold tracking-tight">
-              {mode === "login" ? "Welcome back" : "Create Student Account"}
-            </h2>
-            <p className="text-sm text-muted-foreground mt-1.5">
-              {mode === "login" ? "Sign in to access your portal" : "Register as a new student"}
-            </p>
+            <h2 className="font-display text-2xl font-bold tracking-tight">Welcome back</h2>
+            <p className="text-sm text-muted-foreground mt-1.5">Sign in to access your portal</p>
           </motion.div>
 
           <motion.form variants={itemVariants} onSubmit={handleSubmit} className="space-y-4">
             {error && (
               <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
                 className="bg-destructive/10 text-destructive text-sm px-4 py-3 rounded-xl border border-destructive/20 font-medium">{error}</motion.div>
-            )}
-
-            {mode === "signup" && (
-              <div className="space-y-2">
-                <Label htmlFor="fullName" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Full Name</Label>
-                <Input id="fullName" placeholder="Enter your full name" value={fullName} onChange={e => setFullName(e.target.value)}
-                  className="h-12 rounded-xl bg-muted/40 border-border/80 focus:bg-card focus:border-primary transition-all duration-200" />
-              </div>
             )}
 
             <div className="space-y-2">
@@ -158,32 +131,14 @@ export default function LoginPage() {
             </div>
 
             <Button type="submit" className="w-full h-12 rounded-xl font-semibold text-sm mt-2 group" disabled={loading}>
-              {loading ? "Please wait..." : mode === "login" ? "Sign In" : "Create Account"}
+              {loading ? "Please wait..." : "Sign In"}
               {!loading && <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />}
             </Button>
           </motion.form>
 
-          <motion.div variants={itemVariants} className="mt-6 text-center">
-            {mode === "login" ? (
-              <p className="text-sm text-muted-foreground">
-                New student?{" "}
-                <button onClick={() => { setMode("signup"); setError(""); }} className="text-primary font-semibold hover:underline">
-                  Create an account
-                </button>
-              </p>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Already have an account?{" "}
-                <button onClick={() => { setMode("login"); setError(""); }} className="text-primary font-semibold hover:underline">
-                  Sign in
-                </button>
-              </p>
-            )}
-          </motion.div>
-
           <motion.div variants={itemVariants} className="mt-8 pt-6 border-t border-border/60">
             <p className="text-center text-[11px] text-muted-foreground">
-              Lecturers & Admins: Your accounts are created by the administration.
+              All accounts are created by the administration.
               <br />Need help? Contact <a href="mailto:musinguzij619@gmail.com" className="text-primary font-medium hover:underline">IT Support</a>.
             </p>
           </motion.div>

@@ -20,7 +20,7 @@ export default function StudentDashboard() {
         <Route index element={<StudentDashboardHome />} />
         <Route path="courses" element={<StudentCoursesPage />} />
         <Route path="assignments" element={<StudentAssignmentsPage />} />
-        <Route path="fees" element={<StudentFeesPage />} />
+        
         <Route path="results" element={<StudentResultsPage />} />
         <Route path="timetable" element={<StudentTimetablePage />} />
         <Route path="schedule" element={<StudentSchedulePage />} />

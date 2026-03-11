@@ -37,8 +37,8 @@ export default function AdminDashboard() {
         <Route path="lecturers" element={<AdminLecturersPage />} />
         <Route path="courses" element={<AdminCoursesPage />} />
         <Route path="exams" element={<AdminExamsPage />} />
-        <Route path="fees" element={<AdminFeesPage />} />
-        <Route path="receipts" element={<AdminReceiptReviewPage />} />
+
+
         <Route path="enrollment" element={<AdminEnrollmentPage />} />
         <Route path="clearance" element={<AdminClearancePage />} />
         <Route path="timetable" element={<AdminTimetablePage />} />
