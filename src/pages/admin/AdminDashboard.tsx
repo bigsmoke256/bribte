@@ -5,7 +5,7 @@ import AdminDashboardHome from "./AdminDashboardHome";
 import AdminStudentsPage from "./AdminStudentsPage";
 import AdminLecturersPage from "./AdminLecturersPage";
 import AdminCoursesPage from "./AdminCoursesPage";
-import AdminFeesPage from "./AdminFeesPage";
+
 import AdminEnrollmentPage from "./AdminEnrollmentPage";
 import AdminTimetablePage from "./AdminTimetablePage";
 import AdminSchedulingPage from "./AdminSchedulingPage";
@@ -13,7 +13,7 @@ import AdminAttendancePage from "./AdminAttendancePage";
 import AdminAnnouncementsPage from "./AdminAnnouncementsPage";
 import AdminReportsPage from "./AdminReportsPage";
 import AdminSettingsPage from "./AdminSettingsPage";
-import AdminReceiptReviewPage from "./AdminReceiptReviewPage";
+
 import AdminRecordsPage from "./AdminRecordsPage";
 import AdminExamsPage from "./AdminExamsPage";
 import AdminClearancePage from "./AdminClearancePage";
@@ -37,8 +37,8 @@ export default function AdminDashboard() {
         <Route path="lecturers" element={<AdminLecturersPage />} />
         <Route path="courses" element={<AdminCoursesPage />} />
         <Route path="exams" element={<AdminExamsPage />} />
-        <Route path="fees" element={<AdminFeesPage />} />
-        <Route path="receipts" element={<AdminReceiptReviewPage />} />
+
+
         <Route path="enrollment" element={<AdminEnrollmentPage />} />
         <Route path="clearance" element={<AdminClearancePage />} />
         <Route path="timetable" element={<AdminTimetablePage />} />

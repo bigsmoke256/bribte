@@ -274,7 +274,7 @@ export default function AdminStudentsPage() {
                     <th className="text-center">Year</th>
                     <th className="text-center">Mode</th>
                     <th className="text-center">Status</th>
-                    <th className="text-right">Fee Balance</th>
+                    
                     <th className="text-center pr-5">Actions</th>
                   </tr>
                 </thead>
@@ -299,7 +299,7 @@ export default function AdminStudentsPage() {
                       <td className="text-center">
                         <Badge className={`text-[10px] font-semibold rounded-md border ${statusColor(s.status)}`}>{s.status}</Badge>
                       </td>
-                      <td className="text-right text-sm font-mono">UGX {s.fee_balance.toLocaleString()}</td>
+                      
                       <td className="text-center pr-5">
                         <div className="flex items-center justify-center gap-0.5">
                           <Button size="sm" variant="ghost" className="h-7 w-7 p-0 rounded-lg" onClick={() => openProfile(s)} title="View Profile">
@@ -418,7 +418,7 @@ export default function AdminStudentsPage() {
               <div><Label className="text-xs font-semibold">Year of Study</Label><Input type="number" min={1} max={6} value={editForm.year_of_study} onChange={e => setEditForm(f => ({ ...f, year_of_study: parseInt(e.target.value) || 1 }))} className="mt-1.5 rounded-xl" /></div>
               <div><Label className="text-xs font-semibold">Semester</Label><Input type="number" min={1} max={4} value={editForm.semester} onChange={e => setEditForm(f => ({ ...f, semester: parseInt(e.target.value) || 1 }))} className="mt-1.5 rounded-xl" /></div>
             </div>
-            <div><Label className="text-xs font-semibold">Fee Balance (UGX)</Label><Input type="number" min={0} value={editForm.fee_balance} onChange={e => setEditForm(f => ({ ...f, fee_balance: parseFloat(e.target.value) || 0 }))} className="mt-1.5 rounded-xl" /></div>
+            
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditDialog(false)} className="rounded-xl">Cancel</Button>
@@ -463,17 +463,16 @@ export default function AdminStudentsPage() {
                   <p className="text-sm font-bold mt-1">Y{profileStudent.year_of_study} / S{profileStudent.semester}</p>
                 </div>
                 <div className="p-3 rounded-xl bg-muted/30 text-center">
-                  <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Fee Balance</p>
-                  <p className="text-sm font-bold mt-1 text-warning">UGX {profileStudent.fee_balance.toLocaleString()}</p>
+                  <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Study Mode</p>
+                  <p className="text-sm font-bold mt-1">{profileStudent.study_mode}</p>
                 </div>
               </div>
 
               {/* Tabs */}
               <Tabs defaultValue="enrollments" className="w-full">
-                <TabsList className="w-full rounded-xl">
+               <TabsList className="w-full rounded-xl">
                   <TabsTrigger value="enrollments" className="flex-1 rounded-lg text-xs">Enrollments</TabsTrigger>
                   <TabsTrigger value="grades" className="flex-1 rounded-lg text-xs">Grades</TabsTrigger>
-                  <TabsTrigger value="fees" className="flex-1 rounded-lg text-xs">Fee History</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="enrollments" className="mt-3">
@@ -518,30 +517,8 @@ export default function AdminStudentsPage() {
                   )}
                 </TabsContent>
 
-                <TabsContent value="fees" className="mt-3">
-                  {profilePayments.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-4">No payment records</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {profilePayments.map((p: any) => (
-                        <div key={p.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/40">
-                          <div>
-                            <p className="text-sm font-semibold font-mono">UGX {p.amount?.toLocaleString()}</p>
-                            <p className="text-[10px] text-muted-foreground">
-                              {new Date(p.payment_date).toLocaleDateString("en-UG", { year: "numeric", month: "short", day: "numeric" })}
-                              {p.academic_year && ` • ${p.academic_year}`}
-                            </p>
-                          </div>
-                          <Badge className={`text-[10px] font-semibold rounded-md border ${
-                            p.payment_status === "approved" ? "bg-success/10 text-success border-success/20" :
-                            p.payment_status === "pending" ? "bg-warning/10 text-warning border-warning/20" :
-                            "bg-destructive/10 text-destructive border-destructive/20"
-                          }`}>{p.payment_status}</Badge>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </TabsContent>
+
+
               </Tabs>
             </div>
           )}
