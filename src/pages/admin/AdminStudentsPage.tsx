@@ -418,7 +418,7 @@ export default function AdminStudentsPage() {
               <div><Label className="text-xs font-semibold">Year of Study</Label><Input type="number" min={1} max={6} value={editForm.year_of_study} onChange={e => setEditForm(f => ({ ...f, year_of_study: parseInt(e.target.value) || 1 }))} className="mt-1.5 rounded-xl" /></div>
               <div><Label className="text-xs font-semibold">Semester</Label><Input type="number" min={1} max={4} value={editForm.semester} onChange={e => setEditForm(f => ({ ...f, semester: parseInt(e.target.value) || 1 }))} className="mt-1.5 rounded-xl" /></div>
             </div>
-            <div><Label className="text-xs font-semibold">Fee Balance (UGX)</Label><Input type="number" min={0} value={editForm.fee_balance} onChange={e => setEditForm(f => ({ ...f, fee_balance: parseFloat(e.target.value) || 0 }))} className="mt-1.5 rounded-xl" /></div>
+            
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditDialog(false)} className="rounded-xl">Cancel</Button>
