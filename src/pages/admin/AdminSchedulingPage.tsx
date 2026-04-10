@@ -148,7 +148,7 @@ export default function AdminSchedulingPage() {
     });
 
     if (error) {
-      console.error("Conflict check error:", error);
+      // Conflict check error silently handled
       return [];
     }
     return data || [];

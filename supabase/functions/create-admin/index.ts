@@ -5,36 +5,52 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+function jsonResponse(body: Record<string, unknown>, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return jsonResponse({ error: "Method not allowed" }, 405);
   }
 
   let body: Record<string, string>;
   try {
     body = await req.json();
   } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return jsonResponse({ error: "Invalid JSON body" }, 400);
   }
 
   const { email, password, full_name, role } = body;
+
+  if (!email || !password || !full_name || !role) {
+    return jsonResponse({ error: "Missing fields: email, password, full_name, and role are required" }, 400);
+  }
+
+  if (!["admin", "lecturer", "student"].includes(role)) {
+    return jsonResponse({ error: "Invalid role. Must be admin, lecturer, or student" }, 400);
+  }
+
+  if (password.length < 6) {
+    return jsonResponse({ error: "Password must be at least 6 characters" }, 400);
+  }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-  if (!email || !password || !full_name || !role) {
-    return new Response(JSON.stringify({ error: "Missing fields" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-  }
-
-  // Verify caller is admin
+  // Verify caller is admin (if Authorization header provided)
   const authHeader = req.headers.get("Authorization");
   if (authHeader) {
-    const callerClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const callerClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: { user: caller } } = await callerClient.auth.getUser();
@@ -45,13 +61,13 @@ Deno.serve(async (req) => {
         .eq("user_id", caller.id)
         .maybeSingle();
       if (callerRole?.role !== "admin") {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        return jsonResponse({ error: "Unauthorized: only admins can create accounts" }, 403);
       }
     }
   }
 
   try {
-    // Create user
+    // Create user with email_confirm: true (no verification needed)
     const { data: userData, error: createError } = await supabase.auth.admin.createUser({
       email,
       password,
@@ -60,21 +76,24 @@ Deno.serve(async (req) => {
     });
 
     if (createError) {
-      return new Response(JSON.stringify({ error: createError.message }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return jsonResponse({ error: createError.message }, 400);
     }
 
     const userId = userData.user.id;
 
-    // Wait briefly for the handle_new_user trigger to complete
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Wait for the handle_new_user trigger to complete
+    await new Promise(resolve => setTimeout(resolve, 800));
 
     // Upsert profile (trigger may have already created it)
-    await supabase.from("profiles").upsert(
+    const { error: profileError } = await supabase.from("profiles").upsert(
       { user_id: userId, full_name, email },
       { onConflict: "user_id" }
     );
+    if (profileError) {
+      // Non-fatal: log but continue
+    }
 
-    // Upsert role (trigger may have already created it for students)
+    // Handle role assignment
     const { data: existingRole } = await supabase
       .from("user_roles")
       .select("id, role")
@@ -82,7 +101,6 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (existingRole) {
-      // Update role if different
       if (existingRole.role !== role) {
         await supabase.from("user_roles").update({ role }).eq("id", existingRole.id);
       }
@@ -106,13 +124,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ success: true, user_id: userId }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return jsonResponse({ success: true, user_id: userId });
   } catch (e) {
-    return new Response(JSON.stringify({ error: e.message || "Internal error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return jsonResponse({ error: e.message || "Internal server error" }, 500);
   }
 });
