@@ -126,7 +126,7 @@ export default function AdminRecordsPage() {
 
       setStudents(results);
     } catch (e) {
-      console.error("Error loading students:", e);
+      // Error loading students silently handled
     } finally {
       setLoading(false);
     }
@@ -152,7 +152,7 @@ export default function AdminRecordsPage() {
       setSubmissions((submissionsRes.data || []).map((s: any) => ({ ...s, assignment: Array.isArray(s.assignments) ? s.assignments[0] : s.assignments })) as SubmissionRecord[]);
       setReceipts((receiptsRes.data || []) as ReceiptRecord[]);
     } catch (e) {
-      console.error("Error loading student details:", e);
+      // Error loading student details silently handled
     } finally {
       setDetailLoading(false);
     }

@@ -144,12 +144,25 @@ export default function AdminEnrollmentPage() {
       toast.error(`Course is full (${cap.enrolled}/${cap.max_capacity})`);
       return;
     }
+    // Check duplicate enrollment
+    const existing = enrollments.find(
+      e => e.student_id === form.student_id && e.course_id === form.course_id && e.academic_year === form.academic_year && e.semester === form.semester
+    );
+    if (existing) {
+      toast.error("This student is already enrolled in this course for the selected year/semester");
+      return;
+    }
     const { error } = await supabase.from("enrollments").insert({
       student_id: form.student_id, course_id: form.course_id, academic_year: form.academic_year,
       semester: form.semester, study_mode: form.study_mode, status: "approved",
     });
-    if (error) toast.error(error.message);
-    else { toast.success("Enrolled successfully"); setDialog(false); fetchEnrollments(); fetchCapacities(); }
+    if (error) {
+      if (error.message?.includes("duplicate") || error.code === "23505") {
+        toast.error("This student is already enrolled in this course");
+      } else {
+        toast.error(error.message);
+      }
+    } else { toast.success("Enrolled successfully"); setDialog(false); fetchEnrollments(); fetchCapacities(); }
   };
 
   const updateStatus = async (e: EnrollmentRow, status: string) => {
