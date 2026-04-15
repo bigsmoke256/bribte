@@ -31,15 +31,17 @@ interface AnimatedCardProps {
   children: React.ReactNode;
   delay?: number;
   className?: string;
+  onClick?: () => void;
 }
 
-export function AnimatedCard({ children, delay = 0, className = "" }: AnimatedCardProps) {
+export function AnimatedCard({ children, delay = 0, className = "", onClick }: AnimatedCardProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay, ease: "easeOut" }}
       className={`premium-card p-5 ${className}`}
+      onClick={onClick}
     >
       {children}
     </motion.div>
